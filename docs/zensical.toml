@@ -22,6 +22,7 @@ nav = [
     { "Caching" = "platform/caching.md" },
   ] },
   { "Management console" = "console/index.md" },
+  { "Command-line client" = "cli/index.md" },
   { "Operations" = [
     { "Configuration" = "operations/configuration.md" },
     { "Security" = "operations/security.md" },

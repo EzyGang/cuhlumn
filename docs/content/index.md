@@ -12,6 +12,7 @@ The server is a single Rust binary that keeps its data in one SQLite file and on
 - [Posts, pages, and drafts](platform/posts.md) explains the content model.
 - [Appearance](platform/appearance.md) lists the look settings of a blog.
 - [Management console](console/index.md) describes the web interface.
+- [Command-line client](cli/index.md) publishes Markdown files from scripts and AI agents.
 - [Configuration](operations/configuration.md) lists the server settings.
 - [HTTP API](reference/api.md) describes every route, object, and error.
 - [Under the hood](concepts/how-it-works.md) explains how a request becomes a page.
@@ -30,7 +31,7 @@ The server is a single Rust binary that keeps its data in one SQLite file and on
 | Appearance | Accent color, serif or sans-serif text, logo, favicon, share image, header links, head HTML, footer, credit line |
 | Themes | Light and dark themes with a reader toggle |
 | Media | PNG, JPEG, WebP, GIF, and AVIF uploads of up to 16 MiB |
-| Management | HTTP API with a bearer token, web console with a session cookie |
+| Management | HTTP API with a bearer token, `cuhlumn` command-line client with an agent skill, web console with a session cookie |
 | Deployment | One binary, one SQLite file, Docker image |
 | Lighthouse | 100 for performance, accessibility, best practices, and SEO on home pages, posts, and pages, on mobile and desktop |
 
@@ -38,4 +39,3 @@ The server is a single Rust binary that keeps its data in one SQLite file and on
 
 Cuhlumn has no comments, newsletters, user accounts, or themes beyond the appearance settings.
 One admin token controls every blog on the server.
-The `cuhlumn` command-line client is not implemented yet.

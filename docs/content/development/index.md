@@ -8,7 +8,7 @@ This page explains the repository layout and the commands that build, check, and
 | --- | --- |
 | `crates/api` | The `cuhlumn-api` library with the wire types and the validated value types |
 | `crates/server` | The `cuhlumn-server` binary: HTTP API, public blog pages, share images, and the embedded console |
-| `crates/cli` | The `cuhlumn` command-line client (not implemented yet) |
+| `crates/cli` | The `cuhlumn` command-line client |
 | `console/` | The management console, a Preact single-page app |
 | `docs/` | This documentation site, built with Zensical |
 | `skills/cuhlumn/` | The agent skill for the `cuhlumn` CLI |

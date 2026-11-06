@@ -133,6 +133,26 @@ const LINKS_MAX: usize = 8;
 const HEAD_MAX: usize = 20_000;
 const FOOTER_MAX: usize = 500;
 
+impl From<Site> for SiteInput {
+    /// Returns the input that stores the same site again, with the same IndexNow key.
+    fn from(site: Site) -> Self {
+        Self {
+            title: site.title,
+            description: site.description,
+            aliases: site.aliases,
+            author: site.author,
+            author_url: site.author_url,
+            project_name: site.project_name,
+            project_url: site.project_url,
+            cta: site.cta,
+            lang: site.lang,
+            home: site.home,
+            indexnow_key: Some(site.indexnow_key),
+            brand: site.brand,
+        }
+    }
+}
+
 impl Default for Brand {
     fn default() -> Self {
         Self {

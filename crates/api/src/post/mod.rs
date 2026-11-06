@@ -117,6 +117,23 @@ const TITLE_MAX: usize = 300;
 /// The last second of the year 9999 in unix seconds.
 const PUBLISHED_AT_MAX: i64 = 253_402_300_799;
 
+impl From<Post> for PostInput {
+    /// Returns the input that stores the same post again, with the same publication time.
+    fn from(post: Post) -> Self {
+        Self {
+            title: post.title,
+            description: post.description,
+            body: post.body,
+            tags: post.tags,
+            kind: post.kind,
+            status: post.status,
+            cover: post.cover,
+            og_image: post.og_image,
+            published_at: post.published_at,
+        }
+    }
+}
+
 impl Kind {
     /// Returns the name used in JSON and in the database.
     #[must_use]

@@ -8,5 +8,24 @@ edition.workspace = true
 name = "cuhlumn"
 path = "src/main.rs"
 
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4.45", default-features = false, features = ["std"] }
+clap = { version = "4", features = ["derive", "env"] }
+cuhlumn-api.workspace = true
+dirs = "7"
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "rustls"] }
+serde.workspace = true
+serde-saphyr = "2"
+serde_json.workspace = true
+serde_path_to_error = "0.1"
+thiserror.workspace = true
+
+[dev-dependencies]
+axum = "0.8"
+cuhlumn-server = { path = "../server" }
+tempfile = "3"
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
+
 [lints]
 workspace = true

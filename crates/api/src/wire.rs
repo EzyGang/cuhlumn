@@ -150,10 +150,64 @@ pub enum ErrorCode {
     Internal,
 }
 
+impl ErrorCode {
+    /// Returns the name used in JSON, such as `not_found`.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::BadRequest => "bad_request",
+            Self::Validation => "validation",
+            Self::Unauthorized => "unauthorized",
+            Self::Forbidden => "forbidden",
+            Self::NotFound => "not_found",
+            Self::MethodNotAllowed => "method_not_allowed",
+            Self::Conflict => "conflict",
+            Self::PayloadTooLarge => "payload_too_large",
+            Self::UnsupportedMediaType => "unsupported_media_type",
+            Self::ApiDisabled => "api_disabled",
+            Self::ConsoleUnavailable => "console_unavailable",
+            Self::Internal => "internal",
+        }
+    }
+}
+
+impl fmt::Display for ErrorCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 impl fmt::Debug for SessionInput {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SessionInput")
             .field("token", &"<redacted>")
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::wire::ErrorCode;
+
+    #[test]
+    fn error_code_names_match_json() {
+        let codes = [
+            ErrorCode::BadRequest,
+            ErrorCode::Validation,
+            ErrorCode::Unauthorized,
+            ErrorCode::Forbidden,
+            ErrorCode::NotFound,
+            ErrorCode::MethodNotAllowed,
+            ErrorCode::Conflict,
+            ErrorCode::PayloadTooLarge,
+            ErrorCode::UnsupportedMediaType,
+            ErrorCode::ApiDisabled,
+            ErrorCode::ConsoleUnavailable,
+            ErrorCode::Internal,
+        ];
+        for code in codes {
+            let json = serde_json::to_value(code).unwrap();
+            assert_eq!(json.as_str(), Some(code.as_str()));
+        }
     }
 }
