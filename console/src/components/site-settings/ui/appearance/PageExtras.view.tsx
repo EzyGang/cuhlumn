@@ -24,7 +24,7 @@ export const PageExtras = (): JSX.Element => {
         error={data.errors["brand.footer"]}
         multiline={2}
       />
-      <Field label="Credit" description="Show the Published with cuhlumn line in the footer.">
+      <Field label="Credit" description="Show the “Published with Cuhlumn” line in the footer.">
         <Switch checked={data.form.credit} onCheckedChange={actions.setCredit} />
       </Field>
     </>

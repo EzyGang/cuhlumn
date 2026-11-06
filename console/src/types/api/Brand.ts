@@ -25,6 +25,6 @@ head: string,
  */
 footer: string, 
 /**
- * Shows the "Published with cuhlumn" credit in the footer.
+ * Shows the "Published with Cuhlumn" credit in the footer.
  */
 credit: boolean, };

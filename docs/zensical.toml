@@ -1,0 +1,77 @@
+[project]
+site_name = "Cuhlumn Documentation"
+site_description = "Installation, platform, management console, configuration, and HTTP API documentation for Cuhlumn."
+docs_dir = "content"
+site_dir = "site"
+
+nav = [
+  { "Home" = "index.md" },
+  { "Getting started" = [
+    { "Overview" = "getting-started/index.md" },
+    { "Installation" = "getting-started/installation.md" },
+    { "Quick start" = "getting-started/quickstart.md" },
+  ] },
+  { "Platform" = [
+    { "Sites and domains" = "platform/sites.md" },
+    { "Posts, pages, and drafts" = "platform/posts.md" },
+    { "Appearance" = "platform/appearance.md" },
+    { "Media" = "platform/media.md" },
+    { "Public pages" = "platform/public-pages.md" },
+    { "Search and AI discovery" = "platform/discovery.md" },
+    { "Share images" = "platform/share-images.md" },
+    { "Caching" = "platform/caching.md" },
+  ] },
+  { "Management console" = "console/index.md" },
+  { "Operations" = [
+    { "Configuration" = "operations/configuration.md" },
+    { "Security" = "operations/security.md" },
+    { "Data and backups" = "operations/data.md" },
+    { "Cloudflare" = "operations/cloudflare.md" },
+  ] },
+  { "API reference" = [
+    { "Overview" = "reference/api.md" },
+    { "Sites" = "reference/sites.md" },
+    { "Posts" = "reference/posts.md" },
+    { "Media" = "reference/media.md" },
+    { "Preview" = "reference/preview.md" },
+    { "Sessions" = "reference/sessions.md" },
+    { "Value types" = "reference/value-types.md" },
+    { "Errors" = "reference/errors.md" },
+  ] },
+  { "Under the hood" = "concepts/how-it-works.md" },
+  { "Development" = "development/index.md" },
+]
+
+[project.theme]
+variant = "modern"
+features = [
+  "navigation.instant",
+  "navigation.instant.prefetch",
+  "navigation.instant.progress",
+  "navigation.tabs",
+  "navigation.tabs.sticky",
+  "navigation.sections",
+  "navigation.path",
+  "navigation.tracking",
+  "navigation.top",
+  "toc.follow",
+  "search.highlight",
+  "content.code.copy",
+  "content.code.select",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "deep-orange"
+accent = "teal"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "deep-orange"
+accent = "teal"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
