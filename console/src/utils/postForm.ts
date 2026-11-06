@@ -1,0 +1,52 @@
+import type { Post } from "../types/api/Post";
+import type { PostInput } from "../types/api/PostInput";
+import type { Status } from "../types/api/Status";
+import type { PostForm } from "../types/postEditor";
+import { optional } from "./siteForm";
+
+export const emptyPostForm = (): PostForm => ({
+  slug: "",
+  title: "",
+  description: "",
+  body: "",
+  tags: [],
+  kind: "post",
+  cover: "",
+  og_image: "",
+});
+
+export const postToForm = (post: Post): PostForm => ({
+  slug: post.slug,
+  title: post.title,
+  description: post.description,
+  body: post.body,
+  tags: [...post.tags],
+  kind: post.kind,
+  cover: post.cover ?? "",
+  og_image: post.og_image ?? "",
+});
+
+export const formToPostInput = (form: PostForm, status: Status): PostInput => ({
+  title: form.title,
+  description: form.description,
+  body: form.body,
+  tags: form.tags,
+  kind: form.kind,
+  status,
+  cover: optional(form.cover),
+  og_image: optional(form.og_image),
+  published_at: null,
+});
+
+/** Lists the API field paths that the post form can show an error for. */
+export const postFieldPaths = (form: PostForm): string[] => [
+  "slug",
+  "title",
+  "description",
+  "body",
+  "tags",
+  ...form.tags.map((_, index) => `tags.${index}`),
+  "kind",
+  "cover",
+  "og_image",
+];

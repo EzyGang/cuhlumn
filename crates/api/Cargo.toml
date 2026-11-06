@@ -1,0 +1,19 @@
+[package]
+name = "cuhlumn-api"
+description = "Request and response types of the cuhlumn HTTP API"
+version.workspace = true
+edition.workspace = true
+
+[features]
+ts = ["dep:ts-rs"]
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+ts-rs = { version = "12", default-features = false, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

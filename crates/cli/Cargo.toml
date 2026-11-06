@@ -1,0 +1,12 @@
+[package]
+name = "cuhlumn-cli"
+description = "Command-line client that agents use to manage blogs on a cuhlumn server"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "cuhlumn"
+path = "src/main.rs"
+
+[lints]
+workspace = true

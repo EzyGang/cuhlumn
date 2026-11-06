@@ -1,0 +1,19 @@
+{
+  "name": "cuhlumn",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @cuhlumn/console dev",
+    "build": "pnpm --filter @cuhlumn/console build",
+    "preview": "pnpm --filter @cuhlumn/console preview",
+    "lint": "pnpm --filter @cuhlumn/console lint",
+    "type-check": "pnpm --filter @cuhlumn/console type-check",
+    "validate": "pnpm --filter @cuhlumn/console validate",
+    "format": "pnpm --filter @cuhlumn/console format",
+    "fix": "pnpm --filter @cuhlumn/console fix",
+    "test": "pnpm --filter @cuhlumn/console test"
+  }
+}

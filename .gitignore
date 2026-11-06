@@ -344,7 +344,8 @@ docker-compose.local.*
 *.pyc
 __pycache__
 db.sqlite3
-media
+/media/
+/data/
 
 # Backup files
 *.bak

@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --color-white: oklch(100% 0 0);
+  --color-background: oklch(0% 0 0);
+  --color-surface: oklch(14% 0 0);
+  --color-card: oklch(20% 0 0);
+  --color-subtle: oklch(22% 0 0);
+  --color-raised: oklch(23% 0 0);
+  --color-secondary: oklch(100% 0 0 / 0.8);
+  --color-muted: oklch(65% 0 0);
+  --color-border: oklch(100% 0 0 / 0.1);
+  --color-hover: oklch(100% 0 0 / 0.12);
+  --color-hover-border: oklch(100% 0 0 / 0.25);
+  --color-success: oklch(82% 0.2 145);
+  --color-emerald: oklch(78% 0.18 165);
+  --color-error: oklch(55% 0.2 25);
+  --color-orange: oklch(65% 0.2 45);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply min-w-80 bg-background font-sans text-base leading-normal text-white;
+  }
+
+  button,
+  a,
+  summary,
+  [role="checkbox"],
+  [role="menuitem"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  summary,
+  [role="checkbox"] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [data-disabled] {
+    cursor: not-allowed;
+  }
+  button:disabled {
+    opacity: 0.45;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-white);
+    outline-offset: 3px;
+  }
+
+  input,
+  select,
+  textarea {
+    @apply w-full min-w-0 rounded-none border border-border bg-surface px-3 py-2.5 text-base text-white sm:text-sm;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: var(--color-hover-border);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-muted);
+  }
+  input:disabled,
+  select:disabled {
+    opacity: 0.5;
+  }
+  textarea {
+    resize: vertical;
+  }
+  code {
+    @apply break-all font-mono text-xs text-white;
+  }
+  ::selection {
+    @apply bg-white text-background;
+  }
+}
+
+@layer components {
+  .page-title {
+    @apply text-3xl leading-tight font-semibold tracking-tight sm:text-4xl;
+  }
+  .eyebrow {
+    @apply text-xs font-medium tracking-wide text-muted uppercase;
+  }
+  .panel {
+    @apply min-w-0 border border-border bg-surface p-5;
+  }
+}
