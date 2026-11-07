@@ -9,7 +9,7 @@ export type Locked = {
  */
 token: boolean, 
 /**
- * `CUHLUMN_CONSOLE_HOST` is set.
+ * `CUHLUMN_CONSOLE_HOST` or `CUHLUMN_ADMIN_ADDR` is set.
  */
 console_host: boolean, 
 /**

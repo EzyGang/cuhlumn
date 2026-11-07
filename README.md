@@ -104,7 +104,6 @@ docker compose up -d
 
 Compose starts the image `ghcr.io/ezygang/cuhlumn` and publishes the port on `127.0.0.1:8080`.
 The image checks itself with `cuhlumn-server healthcheck`.
-Add `--profile tunnel` and set `CLOUDFLARE_TUNNEL_TOKEN` to start a Cloudflare tunnel next to the server.
 
 On the first launch without `CUHLUMN_TOKEN`, open the console and set the admin token on the **Setup** page.
 
@@ -262,12 +261,17 @@ The three override variables win over the console values, and the console then s
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `PORT` | `8080` | Listen port |
+| `PORT` | `8080` | Listen port for the blogs |
+| `CUHLUMN_ADMIN_ADDR` | none | Optional address of a private admin listener for the console and the API, such as `0.0.0.0:8081` |
 | `CUHLUMN_DATA` | `./data` | Folder that holds the database, the uploaded images, and the fonts |
 | `RUST_LOG` | `info` | Log filter |
 | `CUHLUMN_TOKEN` | none | Optional override of the admin token, at least 32 bytes |
 | `CUHLUMN_CONSOLE_HOST` | none | Optional override of the console domain |
-| `CUHLUMN_SCHEME` | `https` | Optional override of the scheme in generated addresses and the cookie `Secure` flag |
+| `CUHLUMN_SCHEME` | `https` | Optional override of the scheme in generated addresses and, without an admin listener, the cookie `Secure` flag |
+
+With `CUHLUMN_ADMIN_ADDR`, the `PORT` listener serves only the blogs and `/api/health`.
+The admin port works with HTTPS through a TLS proxy, or with plain HTTP on a private network that encrypts traffic, such as NetBird.
+Set `CUHLUMN_SERVER` of the CLI to the admin address.
 
 IndexNow is a setting of each site, and fonts for share images are uploaded in the console.
 

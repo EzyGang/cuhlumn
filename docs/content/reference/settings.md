@@ -10,6 +10,9 @@ A value from the environment wins over the database value and locks the field.
 | `console_host` | `CUHLUMN_CONSOLE_HOST` | None, so every domain that is not a site serves the console |
 | `scheme` | `CUHLUMN_SCHEME` | `https` |
 
+`CUHLUMN_ADMIN_ADDR` also locks `console_host`.
+With an admin listener, the effective console host is `null`, because the admin port serves the console on every host name.
+
 ## Routes
 
 | Method | Path | Body | Success | Errors |
@@ -49,7 +52,8 @@ It contains the effective values, so a locked field shows the value from the env
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `console_host` | `Host` or `null` | The only domain that serves the console |
-| `scheme` | `"http"` or `"https"` | The scheme of absolute addresses and of the cookie `Secure` flag |
+| `scheme` | `"http"` or `"https"` | The scheme of absolute addresses. Without an admin listener, also of the cookie `Secure` flag |
+| `admin_listener` | Boolean | `CUHLUMN_ADMIN_ADDR` is set, so only the admin port serves the console and the admin API |
 | `locked` | `Locked` | The fields that environment variables set |
 
 ## `Locked`
@@ -57,7 +61,7 @@ It contains the effective values, so a locked field shows the value from the env
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `token` | Boolean | `CUHLUMN_TOKEN` is set |
-| `console_host` | Boolean | `CUHLUMN_CONSOLE_HOST` is set |
+| `console_host` | Boolean | `CUHLUMN_CONSOLE_HOST` or `CUHLUMN_ADMIN_ADDR` is set |
 | `scheme` | Boolean | `CUHLUMN_SCHEME` is set |
 
 ## First setup
@@ -68,8 +72,9 @@ It contains the effective values, so a locked field shows the value from the env
 - After that, it returns `409` with the code `conflict`.
 - When two requests arrive at the same time, the first one wins and the other gets `409`.
 - The database stores only the SHA-256 digest of the token.
-- The answer starts a session. On a console domain, it also sets the session cookie.
+- The answer starts a session. On a console domain or on the admin listener, it also sets the session cookie.
 - On a console domain, a request with an `Origin` header for another domain returns `403`.
+- On the admin listener, a request with an `Origin` header that does not match the `Host` header returns `403`.
 
 ## Settings update
 
@@ -80,6 +85,7 @@ It contains the effective values, so a locked field shows the value from the env
 | A locked field with a value that is not the effective value | `409` with the code `locked` and the field name in `field` |
 | A locked field with the effective value | The server keeps the locked value |
 | `console_host` is a site domain or an alias | `409` with the code `conflict` and `field` set to `console_host` |
+| `console_host` is not `null` while the admin listener is on | `409` with the code `locked` and `field` set to `console_host` |
 | `scheme` changes | The server clears the page cache of every site |
 
 A new console domain takes effect immediately.
@@ -91,7 +97,7 @@ The session cookie belongs to the old domain, so log in again on the new domain.
 
 1. The server stores the digest of the new token.
 2. The server deletes every session.
-3. The answer starts a new session. On a console domain, it also sets the new session cookie.
+3. The answer starts a new session. On a console domain or on the admin listener, it also sets the new session cookie.
 
 The CLI, scripts, and agents need the new token.
 When `CUHLUMN_TOKEN` is set, the route returns `409` with the code `locked` and `field` set to `token`.
@@ -123,6 +129,7 @@ curl -X PUT https://harbor.example.com/api/settings \
 {
   "console_host": "console.harbor.example.com",
   "scheme": "https",
+  "admin_listener": false,
   "locked": { "token": false, "console_host": false, "scheme": false }
 }
 ```

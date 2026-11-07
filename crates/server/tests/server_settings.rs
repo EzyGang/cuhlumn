@@ -140,7 +140,7 @@ async fn environment_values_lock_their_fields() {
     let settings = app.api("GET", "/api/settings", None).await.json();
     assert_eq!(
         settings,
-        json!({"console_host": CONSOLE, "scheme": "https",
+        json!({"console_host": CONSOLE, "scheme": "https", "admin_listener": false,
                "locked": {"token": true, "console_host": true, "scheme": true}})
     );
     let rotate = app

@@ -31,31 +31,17 @@ Without a cache rule, every page view of a post goes to the server.
 
 1. Add each blog domain and each alias to Cloudflare.
 2. Make each DNS record proxied, so the orange cloud is on.
-3. Point the records at the server, or use a [Cloudflare Tunnel](#cloudflare-tunnel-with-compose).
+3. Point the records at the server, where your reverse proxy forwards the traffic to the public port.
 
 The console domain can also go through Cloudflare.
 The cache rule below excludes it.
-
-#### Cloudflare Tunnel with Compose
-
-The `tunnel` profile of `docker-compose.yml` starts `cloudflared` next to the server.
-The tunnel starts after the server health check passes.
-
-1. In the Cloudflare dashboard, create a tunnel and copy its token.
-2. Set `CLOUDFLARE_TUNNEL_TOKEN` in `.env` to the token.
-3. Add a public hostname for each blog domain, each alias, and the console domain.
-4. Send the traffic of each hostname to `http://cuhlumn:8080`.
-5. Start the stack with `docker compose --profile tunnel up -d`.
-
-With the tunnel, the server port does not need to be open to the internet.
+With an [admin listener](configuration.md#admin-listener), the console has no domain, and only the blog domains go through Cloudflare.
 
 ### 2. Configure TLS
 
 1. Set the SSL/TLS mode to **Full (strict)** when the server has its own TLS proxy with a valid certificate.
 2. Turn on **Always Use HTTPS**.
 3. Keep the scheme setting at `https`, which is the default.
-
-With a Cloudflare Tunnel, the tunnel encrypts the connection, and the server can listen on plain HTTP.
 
 ### 3. Create the cache rule
 

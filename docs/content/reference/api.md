@@ -3,12 +3,16 @@
 The HTTP API manages sites, posts, media, fonts, server settings, and console sessions.
 Every route is under `/api` and answers on every domain of the server.
 
+With `CUHLUMN_ADMIN_ADDR`, the API is only on the admin port.
+The public port then answers only `GET /api/health`, and every other `/api` path returns `404` with the code `not_found`.
+See [Admin listener](../operations/configuration.md#admin-listener).
+
 ## Authentication
 
 Admin routes accept one of these credentials:
 
 - `Authorization: Bearer <token>` on any domain
-- The `cuhlumn_session` cookie, only on a domain that serves the console
+- The `cuhlumn_session` cookie, only on a domain that serves the console, or on every host of the admin port
 
 The bearer token has precedence.
 A wrong bearer token returns `401`, even when a valid cookie is present.
@@ -16,6 +20,7 @@ An `Authorization` header with another scheme, such as `Basic` from a proxy, is 
 
 Cookie requests with a method that changes data (`POST`, `PUT`, `DELETE`) must send an `Origin` header for the console domain of the request.
 Browsers send this header automatically.
+On the admin port, the `Origin` host and port must equal the `Host` header.
 
 The admin token comes from `CUHLUMN_TOKEN`, or from the database after the first setup.
 Before the first setup, every admin route and every session route returns `503` with the code `needs_setup`.

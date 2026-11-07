@@ -1,19 +1,12 @@
 //! First launch setup, server settings, and token rotation.
 
-use axum::{
-    extract::State,
-    http::{HeaderMap, header},
-    response::Response,
-};
-use cuhlumn_api::{
-    settings::{ServerSettings, ServerSettingsInput, TokenInput},
-    site::host::Host,
-};
+use axum::{extract::State, http::HeaderMap, response::Response};
+use cuhlumn_api::settings::{ServerSettings, ServerSettingsInput, TokenInput};
 use rusqlite::Connection;
 
 use crate::{
     api::{
-        auth::{Admin, ConsoleRequest, check_origin},
+        auth::{Admin, ConsoleRequest},
         error::ApiError,
         json::Json,
         session,
@@ -36,8 +29,8 @@ pub async fn setup(
     headers: HeaderMap,
     Json(input): Json<TokenInput>,
 ) -> Result<Response, ApiError> {
-    if let Some(host) = &console {
-        check_origin_if_sent(&headers, host)?;
+    if let Some(console) = &console {
+        console.check_origin_if_sent(&headers)?;
     }
     let token = token(&input)?;
     let digest = token.digest_hex();
@@ -54,7 +47,7 @@ pub async fn setup(
             "the server already has an admin token".to_owned(),
         ));
     }
-    session::start(&state, &token, console.is_some()).await
+    session::start(&state, &token, console.is_some().then_some(&headers)).await
 }
 
 /// Returns the effective server settings.
@@ -69,7 +62,8 @@ pub async fn get(_admin: Admin, State(state): State<AppState>) -> Json<ServerSet
 /// # Errors
 ///
 /// Returns [`ApiError::Locked`] when an environment variable sets a field to another value,
-/// and [`ApiError::FieldConflict`] when the console host is a site domain or alias.
+/// or when the admin listener is on and the console host is not empty.
+/// Returns [`ApiError::FieldConflict`] when the console host is a site domain or alias.
 pub async fn put(
     _admin: Admin,
     State(state): State<AppState>,
@@ -98,6 +92,7 @@ pub async fn put_token(
     _admin: Admin,
     State(state): State<AppState>,
     ConsoleRequest(console): ConsoleRequest,
+    headers: HeaderMap,
     Json(input): Json<TokenInput>,
 ) -> Result<Response, ApiError> {
     let token = token(&input)?;
@@ -110,7 +105,7 @@ pub async fn put_token(
             Ok(settings::replace_token(db, &digest, unix_now())?)
         })
         .await?;
-    session::start(&state, &token, console.is_some()).await
+    session::start(&state, &token, console.is_some().then_some(&headers)).await
 }
 
 fn store_server(
@@ -153,12 +148,5 @@ fn token(input: &TokenInput) -> Result<Token, ApiError> {
 fn locked(field: &str) -> ApiError {
     ApiError::Locked {
         field: field.to_owned(),
-    }
-}
-
-fn check_origin_if_sent(headers: &HeaderMap, host: &Host) -> Result<(), ApiError> {
-    match headers.contains_key(header::ORIGIN) {
-        true => check_origin(headers, host),
-        false => Ok(()),
     }
 }

@@ -1,6 +1,6 @@
-# Runs Cuhlumn, and optionally a Cloudflare tunnel in front of it.
+# Runs Cuhlumn. Both ports are published only on 127.0.0.1 of the host.
+# Put your own reverse proxy, such as nginx or Caddy, in front of them.
 # Copy .env.example to .env to set the variables.
-# Start the tunnel with: docker compose --profile tunnel up -d
 
 name: cuhlumn
 
@@ -10,11 +10,14 @@ services:
     build: .
     ports:
       - "127.0.0.1:${CUHLUMN_PORT:-8080}:8080"
+      # The admin port. Nothing listens on it while CUHLUMN_ADMIN_ADDR is not set.
+      - "127.0.0.1:${CUHLUMN_ADMIN_PORT:-8081}:8081"
     # A name without a value passes the variable only when it is set.
     environment:
       - CUHLUMN_TOKEN
       - CUHLUMN_CONSOLE_HOST
       - CUHLUMN_SCHEME
+      - CUHLUMN_ADMIN_ADDR
       - RUST_LOG
     volumes:
       - cuhlumn-data:/data
@@ -32,24 +35,6 @@ services:
       start_period: 15s
       start_interval: 2s
       retries: 3
-    restart: unless-stopped
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    profiles:
-      - tunnel
-    command: tunnel --no-autoupdate run
-    # The tunnel profile needs CLOUDFLARE_TUNNEL_TOKEN.
-    # A required-variable check would also stop the other services, because Compose reads every service.
-    environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
-    depends_on:
-      cuhlumn:
-        condition: service_healthy
-    cap_drop:
-      - ALL
-    security_opt:
-      - no-new-privileges:true
     restart: unless-stopped
 
 volumes:

@@ -5,8 +5,16 @@ The server embeds the console in the binary.
 
 - With a console domain, only that domain serves the console.
 - Without a console domain, every domain that is not a site domain or an alias serves the console.
+- With `CUHLUMN_ADMIN_ADDR`, only the admin port serves the console, on every host name, and the public port never does.
 
 Set the console domain on the **Server settings** page, or with `CUHLUMN_CONSOLE_HOST`.
+See [Admin listener](../operations/configuration.md#admin-listener) for the admin port.
+
+The admin port works with HTTPS and without HTTPS.
+HTTPS through a TLS proxy that sets `X-Forwarded-Proto: https` is recommended when the network does not encrypt traffic.
+Plain HTTP is acceptable on a private network that encrypts traffic itself, such as NetBird or another WireGuard network.
+On plain HTTP, browsers block the clipboard API.
+The token **Copy** buttons then select the token, and the media library shows the address in a message.
 
 ## First launch
 
@@ -15,6 +23,7 @@ The console then opens the **Setup** page at `/setup`.
 
 1. Enter a token with at least 32 characters in the **Admin token** field, or select **Generate**.
 2. Select **Copy**, and keep the token in a safe place. The server stores only a hash and cannot show the token again.
+    On plain HTTP pages outside `localhost`, browsers block the clipboard API. The console then shows and selects the token, so you can copy it by hand.
 3. Select **Save the token and log in**.
 
 The console calls `POST /api/setup` and starts a session.
@@ -60,6 +69,7 @@ The **Server settings** page has two sections.
 
 - An empty console host lets every domain that is not a site serve the console.
 - A field that an environment variable sets is disabled and shows "Set by CUHLUMN_…", such as "Set by CUHLUMN_SCHEME".
+- With an admin port, the console host field is disabled and explains that the console has no console domain.
 - After a move of the console host, the page shows the new address. The session stays on the old domain, so log in again at the new address.
 - **Change the token** asks for a confirmation. The new token ends all sessions. This browser gets a new session. The CLI and agents need the new token.
 

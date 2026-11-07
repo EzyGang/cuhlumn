@@ -22,6 +22,8 @@ pub struct ServerSettings {
     /// The only host that serves the console. `None` lets every host that is not a site serve it.
     pub console_host: Option<Host>,
     pub scheme: Scheme,
+    /// `CUHLUMN_ADMIN_ADDR` is set, so the console and the admin API are only on the admin port.
+    pub admin_listener: bool,
     /// The fields that environment variables set.
     pub locked: Locked,
 }
@@ -32,7 +34,7 @@ pub struct ServerSettings {
 pub struct Locked {
     /// `CUHLUMN_TOKEN` is set.
     pub token: bool,
-    /// `CUHLUMN_CONSOLE_HOST` is set.
+    /// `CUHLUMN_CONSOLE_HOST` or `CUHLUMN_ADMIN_ADDR` is set.
     pub console_host: bool,
     /// `CUHLUMN_SCHEME` is set.
     pub scheme: bool,

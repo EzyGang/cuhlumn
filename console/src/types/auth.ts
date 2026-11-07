@@ -1,3 +1,5 @@
+import type { RefObject } from "preact";
+
 export interface LoginModel {
   data: { token: string; error: string | null };
   status: { submitting: boolean };
@@ -6,7 +8,13 @@ export interface LoginModel {
 
 /** A new admin token that the admin types or generates. */
 export interface TokenDraftModel {
-  data: { token: string; visible: boolean; longEnough: boolean };
+  data: {
+    token: string;
+    visible: boolean;
+    longEnough: boolean;
+    /** The token input, so the copy action can select the token when the clipboard API fails. */
+    input: RefObject<HTMLInputElement>;
+  };
   actions: {
     setToken: (token: string) => void;
     toggleVisible: () => void;

@@ -20,6 +20,8 @@ Set these environment variables before you run a command:
 | `CUHLUMN_SITE` | The canonical domain of the blog, such as `blog.example.com` |
 
 The flags `--server`, `--token`, and `--site` override the variables.
+When the server uses an admin port (`CUHLUMN_ADMIN_ADDR`), `CUHLUMN_SERVER` must be the admin address, for example `http://100.92.3.4:8081`.
+The public address then answers only `cuhlumn health`.
 `cuhlumn health` checks the connection without a token.
 Never print the token or write it into a file in a repository.
 

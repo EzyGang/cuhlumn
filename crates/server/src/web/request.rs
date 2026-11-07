@@ -8,11 +8,18 @@ use cuhlumn_api::site::host::Host;
 /// The `Host` header comes first; HTTP/2 requests without it use the URI authority.
 #[must_use]
 pub fn request_host(headers: &HeaderMap, uri: &Uri) -> Option<Host> {
-    let raw = headers
+    normalize_host(request_authority(headers, uri)?)
+}
+
+/// Returns the raw authority that a request addresses, such as `100.92.3.4:8081`.
+///
+/// The `Host` header comes first; HTTP/2 requests without it use the URI authority.
+#[must_use]
+pub fn request_authority<'a>(headers: &'a HeaderMap, uri: &'a Uri) -> Option<&'a str> {
+    headers
         .get(header::HOST)
         .and_then(|value| value.to_str().ok())
-        .or_else(|| uri.authority().map(|authority| authority.as_str()))?;
-    normalize_host(raw)
+        .or_else(|| uri.authority().map(|authority| authority.as_str()))
 }
 
 /// Removes a port, a trailing dot, and uppercase letters from a host header value.

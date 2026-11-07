@@ -22,6 +22,9 @@ The command installs the `cuhlumn` binary in `~/.cargo/bin`.
 | `CUHLUMN_TOKEN` | `--token` | The admin token |
 | `CUHLUMN_SITE` | `--site` | The canonical domain of the site that commands work on |
 
+When the server uses an admin port (`CUHLUMN_ADMIN_ADDR`), `CUHLUMN_SERVER` must be the admin address, for example `http://100.92.3.4:8081`.
+The public address then answers only `cuhlumn health`, and the other commands get `404`.
+
 `cuhlumn health` needs only the server address.
 `cuhlumn site list` needs the server address and the token.
 Every other site, post, media, and announce command also needs the site.

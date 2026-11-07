@@ -12,10 +12,11 @@ use axum::{
 };
 use cuhlumn_api::{settings::Scheme, site::host::Host};
 use cuhlumn_server::{
+    admin_router,
     config::{Config, Token},
     db::unix_now,
     indexnow::IndexNow,
-    router,
+    public_router, router,
     state::AppState,
     web::cache::cached::Cached,
 };
@@ -38,6 +39,8 @@ pub struct Setup {
     pub token: Option<&'static str>,
     pub scheme: Option<Scheme>,
     pub console_host: Option<&'static str>,
+    /// Sets `CUHLUMN_ADMIN_ADDR`, so the app gets the public and the admin router.
+    pub admin_listener: bool,
     pub indexnow: String,
 }
 
@@ -47,6 +50,7 @@ impl Default for Setup {
             token: Some(TOKEN),
             scheme: Some(Scheme::Https),
             console_host: Some(CONSOLE),
+            admin_listener: false,
             indexnow: OFFLINE_INDEXNOW.to_owned(),
         }
     }
@@ -64,8 +68,13 @@ impl Setup {
     }
 }
 
+/// A test server.
+///
+/// With an admin listener, `router` is the admin router and `public` is the public router.
+/// Without one, both are the single router.
 pub struct TestApp {
     pub router: Router,
+    pub public: Router,
     pub state: AppState,
     dir: TempDir,
 }
@@ -102,8 +111,13 @@ impl TestApp {
     pub async fn open(setup: Setup) -> Self {
         let dir = tempfile::tempdir().unwrap();
         let state = open_state(dir.path(), &setup).await;
+        let (router, public) = match setup.admin_listener {
+            true => (admin_router(state.clone()), public_router(state.clone())),
+            false => (router(state.clone()), router(state.clone())),
+        };
         Self {
-            router: router(state.clone()),
+            router,
+            public,
             state,
             dir,
         }
@@ -146,21 +160,12 @@ impl TestApp {
     }
 
     pub async fn send(&self, request: Request<Body>) -> Res {
-        let response = self.router.clone().oneshot(request).await.unwrap();
-        let status = response.status();
-        let headers = response.headers().clone();
-        let body = response
-            .into_body()
-            .collect()
-            .await
-            .unwrap()
-            .to_bytes()
-            .to_vec();
-        Res {
-            status,
-            headers,
-            body,
-        }
+        send_to(&self.router, request).await
+    }
+
+    /// Sends a request to the public router.
+    pub async fn send_public(&self, request: Request<Body>) -> Res {
+        send_to(&self.public, request).await
     }
 
     /// Sends an API request with the bearer token and an optional JSON body.
@@ -226,9 +231,30 @@ pub fn json_body(builder: Builder, body: Option<Value>) -> Request<Body> {
     }
 }
 
+async fn send_to(router: &Router, request: Request<Body>) -> Res {
+    let response = router.clone().oneshot(request).await.unwrap();
+    let status = response.status();
+    let headers = response.headers().clone();
+    let body = response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes()
+        .to_vec();
+    Res {
+        status,
+        headers,
+        body,
+    }
+}
+
 async fn open_state(data: &Path, setup: &Setup) -> AppState {
     let config = Config {
         port: 0,
+        admin_addr: setup
+            .admin_listener
+            .then(|| "127.0.0.1:8081".parse().unwrap()),
         data: data.to_owned(),
         token: setup.token.map(|token| Token::new(token).unwrap()),
         console_host: setup.console_host.map(|host| host.parse().unwrap()),

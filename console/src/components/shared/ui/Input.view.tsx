@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { JSX, RefObject } from "preact";
 import { Input as BaseInput } from "@base-ui/react/input";
 
 interface InputProps {
@@ -16,6 +16,7 @@ interface InputProps {
   class?: string | undefined;
   onKeyDown?: (event: KeyboardEvent) => void;
   onBlur?: () => void;
+  inputRef?: RefObject<HTMLInputElement> | undefined;
 }
 
 export const Input = ({
@@ -24,10 +25,12 @@ export const Input = ({
   type = "text",
   label,
   invalid = false,
+  inputRef,
   class: extra,
   ...rest
 }: InputProps): JSX.Element => (
   <BaseInput
+    ref={inputRef ?? null}
     value={value}
     onValueChange={onValueChange}
     type={type}
