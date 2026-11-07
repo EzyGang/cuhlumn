@@ -91,7 +91,7 @@ See [Share images](../platform/share-images.md#fonts).
 | Section | Fields |
 | --- | --- |
 | Domains | Host (fixed after creation), aliases, IndexNow key, **IndexNow** switch |
-| General | Title, description, call to action, author, author address, project name, project address, language, home page |
+| General | Title, description, call to action, **Show the call to action on posts by default**, author, author address, project name, project address, language, home page |
 | Announcement | **Show the bar**, text, link, link text, tone, start, end, **Dismissible**, and the status |
 | Appearance | The groups below |
 | Delete site | Deletes the site with all posts, pages, and media after a confirmation |
@@ -128,9 +128,10 @@ See [Appearance](../platform/appearance.md).
 
 ## Editor
 
-The editor contains the title, the slug, the kind, the description, the tags, the cover image, the share image, and the Markdown body.
+The editor contains the title, the slug, the kind, the description, the tags, the cover image, the share image, the call to action choice, and the Markdown body.
 
 - The console suggests a slug from the title. The slug cannot change after the first save.
+- **Call to action** has three choices: "Site default (shown)" or "Site default (hidden)", **Show**, and **Hide**. The first choice follows the site setting.
 - The preview pane renders the body with the server Markdown renderer 300 ms after the last change.
 - The preview shows the word count and the table of contents.
 - The preview runs in a sandboxed frame, so scripts and styles in the body cannot affect the console.

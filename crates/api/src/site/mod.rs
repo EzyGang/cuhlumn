@@ -38,8 +38,10 @@ pub struct Site {
     /// The product that the blog sends readers to.
     pub project_name: String,
     pub project_url: Option<AbsoluteUrl>,
-    /// The call to action after each post.
+    /// The call-to-action text above the project button after posts.
     pub cta: String,
+    /// Shows the call to action on posts and pages that do not choose for themselves.
+    pub show_cta: bool,
     pub lang: Lang,
     /// The slug of the page that the site shows as its home page.
     pub home: Option<Slug>,
@@ -79,6 +81,9 @@ pub struct SiteInput {
     pub project_url: Option<AbsoluteUrl>,
     #[serde(default, deserialize_with = "text::de_text")]
     pub cta: String,
+    /// Shows the call to action on posts and pages that do not choose for themselves.
+    #[serde(default = "show_cta_default")]
+    pub show_cta: bool,
     #[serde(default)]
     pub lang: Lang,
     /// Must name an existing page of the site.
@@ -110,6 +115,7 @@ impl From<Site> for SiteInput {
             project_name: site.project_name,
             project_url: site.project_url,
             cta: site.cta,
+            show_cta: site.show_cta,
             lang: site.lang,
             home: site.home,
             indexnow_key: Some(site.indexnow_key),
@@ -121,5 +127,9 @@ impl From<Site> for SiteInput {
 }
 
 fn indexnow_default() -> bool {
+    true
+}
+
+fn show_cta_default() -> bool {
     true
 }

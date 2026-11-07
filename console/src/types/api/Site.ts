@@ -24,9 +24,13 @@ aliases: Array<Host>, author: string, author_url: AbsoluteUrl | null,
  */
 project_name: string, project_url: AbsoluteUrl | null, 
 /**
- * The call to action after each post.
+ * The call-to-action text above the project button after posts.
  */
-cta: string, lang: Lang, 
+cta: string, 
+/**
+ * Shows the call to action on posts and pages that do not choose for themselves.
+ */
+show_cta: boolean, lang: Lang, 
 /**
  * The slug of the page that the site shows as its home page.
  */

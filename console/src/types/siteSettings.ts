@@ -36,7 +36,13 @@ export type SiteTextKey =
 export type ImageKey = "logo" | "favicon" | "og_image";
 
 /** The on/off settings of a site. */
-export type SiteFlagKey = "credit" | "theme_toggle" | "social_in_header" | "card_meta" | "indexnow";
+export type SiteFlagKey =
+  | "credit"
+  | "theme_toggle"
+  | "social_in_header"
+  | "card_meta"
+  | "indexnow"
+  | "show_cta";
 
 /** The appearance settings that the console shows as a set of choices. */
 export interface AppearanceChoices {
@@ -83,6 +89,7 @@ export interface SiteForm extends Record<SiteTextKey, string>, AppearanceChoices
   social_in_header: boolean;
   card_meta: boolean;
   indexnow: boolean;
+  show_cta: boolean;
   announcement: AnnouncementForm;
 }
 

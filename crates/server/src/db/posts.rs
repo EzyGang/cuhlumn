@@ -91,14 +91,14 @@ pub fn put(
     let published_at = input.published_at.or(stored).or(first_publication);
     connection.execute(
         "INSERT INTO posts (host, slug, title, description, body, tags, kind, status, cover,
-           og_image, published_at, updated_at)
+           og_image, show_cta, published_at, updated_at)
          VALUES (:host, :slug, :title, :description, :body, :tags, :kind, :status, :cover,
-           :og_image, :published_at, :now)
+           :og_image, :show_cta, :published_at, :now)
          ON CONFLICT (host, slug) DO UPDATE SET title = excluded.title,
            description = excluded.description, body = excluded.body, tags = excluded.tags,
            kind = excluded.kind, status = excluded.status, cover = excluded.cover,
-           og_image = excluded.og_image, published_at = excluded.published_at,
-           updated_at = excluded.updated_at",
+           og_image = excluded.og_image, show_cta = excluded.show_cta,
+           published_at = excluded.published_at, updated_at = excluded.updated_at",
         named_params! {
             ":host": host.as_str(),
             ":slug": slug.as_str(),
@@ -110,6 +110,7 @@ pub fn put(
             ":status": input.status.as_str(),
             ":cover": input.cover.as_ref().map(|url| url.as_str()),
             ":og_image": input.og_image.as_ref().map(|url| url.as_str()),
+            ":show_cta": input.show_cta,
             ":published_at": published_at,
             ":now": now,
         },
@@ -148,7 +149,7 @@ pub fn delete(connection: &Connection, host: &Host, slug: &Slug) -> Result<bool,
 }
 
 const SELECT: &str = "SELECT p.slug, p.title, p.description, p.body, p.tags, p.kind, p.status,
-  p.cover, p.og_image, p.published_at, p.updated_at, s.home
+  p.cover, p.og_image, p.show_cta, p.published_at, p.updated_at, s.home
   FROM posts p JOIN sites s ON s.host = p.host";
 
 fn post_row(row: &Row<'_>, scheme: Scheme, host: &Host) -> rusqlite::Result<Post> {
@@ -168,6 +169,7 @@ fn post_row(row: &Row<'_>, scheme: Scheme, host: &Host) -> rusqlite::Result<Post
         status: parse(row, "status")?,
         cover: parse_optional(row, "cover")?,
         og_image: parse_optional(row, "og_image")?,
+        show_cta: row.get("show_cta")?,
         published_at: row.get("published_at")?,
         updated_at: row.get("updated_at")?,
         slug,

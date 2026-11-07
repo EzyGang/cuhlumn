@@ -19,6 +19,11 @@ title: string, description: string,
  */
 body: string, tags: Tags, kind: Kind, status: Status, cover: LinkUrl | null, og_image: LinkUrl | null, 
 /**
+ * Shows the call to action after this post.
+ * `None` follows the site default, `true` always shows it, and `false` never shows it.
+ */
+show_cta: boolean | null, 
+/**
  * A publication time to set, in unix seconds from 0 to 253402300799 (the end of year 9999).
  * `None` keeps the first publication time.
  */

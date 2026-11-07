@@ -20,6 +20,7 @@ const harbor = (): Site => ({
   project_name: "Harbor",
   project_url: "https://harbor.example.com/app",
   cta: "",
+  show_cta: false,
   lang: "en",
   home: null,
   indexnow_key: "harbor-key-0001",
@@ -66,6 +67,7 @@ describe("site form mapping", () => {
     const input = formToSiteInput(siteToForm(site));
     expect(input.brand).toEqual(site.brand);
     expect(input.indexnow).toBe(false);
+    expect(input.show_cta).toBe(false);
     expect(input.announcement).toEqual(site.announcement);
   });
 
@@ -99,6 +101,7 @@ describe("site form mapping", () => {
   it("starts a new site with the defaults of the server", () => {
     const input = formToSiteInput(emptySiteForm());
     expect(input.indexnow).toBe(true);
+    expect(input.show_cta).toBe(true);
     expect(input.announcement).toBeNull();
     expect(input.brand).toMatchObject({
       palette: "paper",

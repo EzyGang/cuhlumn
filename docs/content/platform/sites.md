@@ -50,8 +50,9 @@ The admin sets it on the **Server settings** page of the console, or with `CUHLU
 | `description` | The home page lead text, the meta description, the feed subtitle, and `llms.txt` |
 | `aliases` | Other domains that redirect to the canonical domain |
 | `author`, `author_url` | The author in the post meta line, the JSON-LD, and the feed |
-| `project_name`, `project_url` | The product link in the header and the call to action after each post |
+| `project_name`, `project_url` | The product link in the header and the call to action after posts |
 | `cta` | The call-to-action text above the product button |
+| `show_cta` | Shows the call to action on posts and pages that do not choose for themselves. See [Call to action](posts.md#call-to-action) |
 | `lang` | The `lang` attribute, `inLanguage` in JSON-LD, and `xml:lang` in the feed |
 | `home` | A page slug to show at `/` |
 | `indexnow_key` | The key for IndexNow, served at `/{key}.txt` |

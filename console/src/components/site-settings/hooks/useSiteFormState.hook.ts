@@ -56,6 +56,7 @@ const FLAG_KEYS: readonly SiteFlagKey[] = [
   "social_in_header",
   "card_meta",
   "indexnow",
+  "show_cta",
 ];
 
 const linkRows = (

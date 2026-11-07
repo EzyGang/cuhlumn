@@ -30,6 +30,9 @@ pub struct Post {
     pub cover: Option<LinkUrl>,
     /// The share image that replaces the generated card.
     pub og_image: Option<LinkUrl>,
+    /// Shows the call to action after this post.
+    /// `None` follows the site default.
+    pub show_cta: Option<bool>,
     /// The first publication time, in unix seconds.
     #[cfg_attr(feature = "ts", ts(type = "number | null"))]
     pub published_at: Option<i64>,
@@ -65,6 +68,10 @@ pub struct PostInput {
     pub cover: Option<LinkUrl>,
     #[serde(default)]
     pub og_image: Option<LinkUrl>,
+    /// Shows the call to action after this post.
+    /// `None` follows the site default, `true` always shows it, and `false` never shows it.
+    #[serde(default)]
+    pub show_cta: Option<bool>,
     /// A publication time to set, in unix seconds from 0 to 253402300799 (the end of year 9999).
     /// `None` keeps the first publication time.
     #[serde(default, deserialize_with = "de_published_at")]
@@ -129,6 +136,7 @@ impl From<Post> for PostInput {
             status: post.status,
             cover: post.cover,
             og_image: post.og_image,
+            show_cta: post.show_cta,
             published_at: post.published_at,
         }
     }

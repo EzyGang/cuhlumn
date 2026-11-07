@@ -60,7 +60,7 @@ A post page contains these parts:
 6. The table of contents "Contents", when the body has three or more second- and third-level headings
 7. The body
 8. The tags
-9. The call to action, when the site has a `project_url`
+9. The call to action, when the site has a `project_url` and the entry shows it. See [Call to action](posts.md#call-to-action)
 10. "More posts": up to three other posts that share a tag, or the three latest posts
 
 A page has the same layout without the progress bar, the date line, and "More posts".

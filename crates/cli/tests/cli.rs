@@ -228,6 +228,36 @@ fn push_does_not_unpublish_without_draft_flag() {
 }
 
 #[test]
+fn show_cta_round_trips_through_front_matter() {
+    let server = Server::start();
+    server.create_site();
+    server.write(
+        "sqlite-backups.md",
+        post_file("show_cta: false\n").as_bytes(),
+    );
+    let saved = server.json(&["post", "push", "sqlite-backups.md"]);
+    assert_eq!(saved["post"]["show_cta"], json!(false));
+    let markdown = server.run(&["post", "get", "sqlite-backups", "--markdown"]);
+    assert_eq!(markdown.code, 0, "{}", markdown.stderr);
+    assert!(
+        markdown.stdout.contains("\nshow_cta: false\n"),
+        "{}",
+        markdown.stdout
+    );
+    let published = server.json(&["post", "publish", "sqlite-backups"]);
+    assert_eq!(published["post"]["show_cta"], json!(false));
+
+    server.write("hello.md", post_file("").as_bytes());
+    server.json(&["post", "push", "hello.md"]);
+    let markdown = server.run(&["post", "get", "hello", "--markdown"]);
+    assert!(!markdown.stdout.contains("show_cta"), "{}", markdown.stdout);
+
+    let site = server.json(&["site", "set", "show_cta:=false"]);
+    assert_eq!(site["show_cta"], json!(false));
+    assert_eq!(server.json(&["site", "get"])["show_cta"], json!(false));
+}
+
+#[test]
 fn invalid_input_is_rejected_before_the_request() {
     let server = Server::start();
     server.create_site();

@@ -26,6 +26,7 @@ Unknown fields return `400`.
 | `status` | `"draft"` or `"published"` | `"draft"` | |
 | `cover` | [`LinkUrl`](value-types.md#linkurl) or `null` | `null` | |
 | `og_image` | `LinkUrl` or `null` | `null` | |
+| `show_cta` | Boolean or `null` | `null` | `null` follows the site `show_cta`. `true` always shows the call to action, `false` never shows it |
 | `published_at` | Integer or `null` | `null` | From 0 to 253402300799 (the end of year 9999) |
 
 ## `published_at`
@@ -53,6 +54,7 @@ The API cannot clear a stored publication time.
 | `status` | `"draft"` or `"published"` |
 | `cover` | `LinkUrl` or `null` |
 | `og_image` | `LinkUrl` or `null` |
+| `show_cta` | Boolean or `null` |
 | `published_at` | Integer or `null` |
 | `updated_at` | Integer |
 | `url` | String: `{scheme}://{host}/{slug}/`, or `{scheme}://{host}/` for the home page |
@@ -98,6 +100,7 @@ curl -X PUT https://blog.example.com/api/sites/blog.example.com/posts/about \
     "status": "published",
     "cover": null,
     "og_image": null,
+    "show_cta": null,
     "published_at": 1793975922,
     "updated_at": 1793975922,
     "url": "https://blog.example.com/about/"

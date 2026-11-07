@@ -25,6 +25,10 @@ pub fn render(blog: &Blog, entry: &Entry) -> String {
     let description = entry.summary();
     let image = blog.entry_image(entry);
     let is_page = entry.is_page();
+    // The post choice wins over the site default.
+    let pitch = blog
+        .project()
+        .filter(|_| post.show_cta.unwrap_or(site.show_cta));
     let head = Head {
         url: Some(post.url.clone()),
         kind: if is_page {
@@ -72,7 +76,7 @@ pub fn render(blog: &Blog, entry: &Entry) -> String {
                 } }
             }
         }
-        @if let Some((label, url)) = blog.project() {
+        @if let Some((label, url)) = pitch {
             aside.pitch {
                 @if !site.cta.is_empty() { p { (site.cta) } }
                 a.pitch-button href=(url) { (label) }

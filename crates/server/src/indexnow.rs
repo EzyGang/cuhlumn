@@ -98,6 +98,7 @@ mod tests {
             project_name: String::new(),
             project_url: None,
             cta: String::new(),
+            show_cta: true,
             lang: Lang::default(),
             home: None,
             indexnow_key: IndexNowKey::new("0123456789abcdef").unwrap(),

@@ -13,6 +13,7 @@ fn omitted_fields_take_defaults() {
     assert_eq!(input.status, Status::Draft);
     assert!(input.tags.as_slice().is_empty());
     assert_eq!(input.published_at, None);
+    assert_eq!(input.show_cta, None);
 }
 
 #[test]
@@ -82,4 +83,13 @@ fn publication_time_is_in_range() {
         );
     }
     assert!(parse(json!({"title": "x", "body": "x", "published_at": null})).is_ok());
+}
+
+#[test]
+fn show_cta_round_trips() {
+    for value in [Value::Null, json!(true), json!(false)] {
+        let post = parse(json!({"title": "x", "body": "x", "show_cta": value})).unwrap();
+        assert_eq!(serde_json::to_value(&post).unwrap()["show_cta"], value);
+    }
+    assert!(parse(json!({"title": "x", "body": "x", "show_cta": "yes"})).is_err());
 }

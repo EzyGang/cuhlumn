@@ -27,6 +27,7 @@ Unknown fields return `400`.
 | `project_name` | String | `""` | No control characters |
 | `project_url` | `AbsoluteUrl` or `null` | `null` | |
 | `cta` | String | `""` | No control characters |
+| `show_cta` | Boolean | `true` | Shows the call to action on posts and pages that do not choose for themselves |
 | `lang` | [`Lang`](value-types.md#lang) | `"en"` | |
 | `home` | [`Slug`](value-types.md#slug) or `null` | `null` | Must name an existing page of the site |
 | `indexnow_key` | [`IndexNowKey`](value-types.md#indexnowkey) or `null` | `null` | `null` keeps the stored key |
@@ -110,6 +111,7 @@ The answer of the site routes.
 | `project_name` | String |
 | `project_url` | `AbsoluteUrl` or `null` |
 | `cta` | String |
+| `show_cta` | Boolean |
 | `lang` | `Lang` |
 | `home` | `Slug` or `null` |
 | `indexnow_key` | `IndexNowKey` |
