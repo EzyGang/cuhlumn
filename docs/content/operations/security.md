@@ -8,24 +8,42 @@ One admin token controls every site on the server.
 A token holder can publish raw HTML and scripts on every blog, through post bodies and the `head` setting.
 Give the token only to writers and agents that you trust completely.
 
+## First launch
+
+Without an admin token, the server starts in setup mode, and the first visitor of the console sets the token.
+
+!!! warning "Anyone who reaches the server first can claim it"
+    Before the setup, the console answers on every domain that is not a blog domain, also on the IP address of the server.
+    A person who finds the server before you can set the token and control every site.
+    To prevent this, do one of these steps:
+
+    - Set `CUHLUMN_TOKEN` before the first start.
+    - Keep the port private until you complete the setup.
+
+Only the first `POST /api/setup` request succeeds.
+Later requests return `409` with the code `conflict`.
+
 ## Admin token
 
 - The token must have at least 32 bytes.
-- The server keeps only the SHA-256 digest of the token in memory.
+- The database stores only the SHA-256 digest of the token.
 - The server compares digests in constant time.
 - The bearer token works on every domain of the server.
+- When `CUHLUMN_TOKEN` is set, it overrides the token in the database, and the console cannot change it.
+- A new token, from the console or from `CUHLUMN_TOKEN`, ends all sessions.
 
 ## Console sessions
 
 | Property | Value |
 | --- | --- |
 | Cookie | `cuhlumn_session` |
-| Attributes | `HttpOnly`, `SameSite=Strict`, `Path=/`, `Max-Age=604800`, and `Secure` when `CUHLUMN_SCHEME=https` |
+| Attributes | `HttpOnly`, `SameSite=Strict`, `Path=/`, `Max-Age=604800`, and `Secure` when the scheme is `https` |
 | Session identifier | 32 random bytes |
 | Stored value | The SHA-256 hash of the token digest and the identifier |
 | Lifetime | 7 days from login, not extended by use |
 
 - The server accepts the cookie only on the console domain.
+- Without a saved console domain, every domain that is not a blog domain counts as the console domain.
 - Because the stored value includes the token digest, a new token ends all sessions.
 - The server deletes expired sessions at startup and at each login.
 
@@ -54,4 +72,5 @@ The cause goes only to the server log.
 ## Network
 
 The server listens on plain HTTP.
-Put a TLS proxy in front of it, and set `CUHLUMN_SCHEME=https` in production.
+Put a TLS proxy in front of it, and keep the scheme at `https` in production.
+The Compose file publishes the port only on `127.0.0.1`.

@@ -10,12 +10,14 @@ use axum::{
     body::Body,
     http::{HeaderMap, Request, StatusCode, request::Builder},
 };
-use cuhlumn_api::site::host::Host;
+use cuhlumn_api::{settings::Scheme, site::host::Host};
 use cuhlumn_server::{
-    config::{Config, Scheme, Switch, Token},
+    config::{Config, Token},
+    db::unix_now,
+    indexnow::IndexNow,
     router,
     state::AppState,
-    web::cache::Cached,
+    web::cache::cached::Cached,
 };
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
@@ -27,6 +29,40 @@ pub const CONSOLE: &str = "console.test";
 pub const HOST: &str = "blog.example.com";
 pub const ADMIN_HOST: &str = "admin.test";
 pub const PNG: &[u8] = b"\x89PNG\r\n\x1a\n\0\0\0\rIHDRtest-image";
+/// An IndexNow endpoint on a closed local port, so tests never reach the network.
+pub const OFFLINE_INDEXNOW: &str = "http://127.0.0.1:9/indexnow";
+
+/// The overrides and the IndexNow endpoint of a test server.
+#[derive(Clone, Debug)]
+pub struct Setup {
+    pub token: Option<&'static str>,
+    pub scheme: Option<Scheme>,
+    pub console_host: Option<&'static str>,
+    pub indexnow: String,
+}
+
+impl Default for Setup {
+    fn default() -> Self {
+        Self {
+            token: Some(TOKEN),
+            scheme: Some(Scheme::Https),
+            console_host: Some(CONSOLE),
+            indexnow: OFFLINE_INDEXNOW.to_owned(),
+        }
+    }
+}
+
+impl Setup {
+    /// A server without overrides, as on a first launch.
+    pub fn fresh() -> Self {
+        Self {
+            token: None,
+            scheme: None,
+            console_host: None,
+            ..Self::default()
+        }
+    }
+}
 
 pub struct TestApp {
     pub router: Router,
@@ -42,23 +78,30 @@ pub struct Res {
 
 impl TestApp {
     pub async fn new() -> Self {
-        Self::open(Some(TOKEN), Scheme::Https).await
+        Self::open(Setup::default()).await
     }
 
+    /// Builds an app without a token, before the first setup.
     pub async fn without_token() -> Self {
-        Self::open(None, Scheme::Https).await
+        Self::open(Setup {
+            token: None,
+            ..Setup::default()
+        })
+        .await
     }
 
     /// Builds an app whose public addresses use `http`.
     pub async fn http() -> Self {
-        Self::open(Some(TOKEN), Scheme::Http).await
+        Self::open(Setup {
+            scheme: Some(Scheme::Http),
+            ..Setup::default()
+        })
+        .await
     }
 
-    async fn open(token: Option<&str>, scheme: Scheme) -> Self {
+    pub async fn open(setup: Setup) -> Self {
         let dir = tempfile::tempdir().unwrap();
-        let state = AppState::open(config(dir.path(), token, scheme))
-            .await
-            .unwrap();
+        let state = open_state(dir.path(), &setup).await;
         Self {
             router: router(state.clone()),
             state,
@@ -67,11 +110,17 @@ impl TestApp {
     }
 
     /// Opens a second state on the same data folder with another token and returns its router.
-    pub async fn reopen(&self, token: &str) -> Router {
-        let state = AppState::open(config(self.dir.path(), Some(token), Scheme::Https))
-            .await
-            .unwrap();
-        router(state)
+    pub async fn reopen(&self, token: &'static str) -> Router {
+        let setup = Setup {
+            token: Some(token),
+            ..Setup::default()
+        };
+        router(open_state(self.dir.path(), &setup).await)
+    }
+
+    /// Opens a second state on the same data folder with `setup`.
+    pub async fn reopen_with(&self, setup: &Setup) -> AppState {
+        open_state(self.dir.path(), setup).await
     }
 
     pub fn data(&self) -> PathBuf {
@@ -85,14 +134,14 @@ impl TestApp {
         let generation = cache.generation(&host);
         let page = Arc::new(Cached::new("text/plain", "cached", 60));
         cache.insert(&host, "/".to_owned(), generation, page);
-        assert!(cache.get(&host, "/").is_some());
+        assert!(cache.get(&host, "/", unix_now()).is_some());
     }
 
     /// Returns `true` when the cached page of `HOST` is gone.
     pub fn cache_is_cleared(&self) -> bool {
         self.state
             .cache()
-            .get(&Host::new(HOST).unwrap(), "/")
+            .get(&Host::new(HOST).unwrap(), "/", unix_now())
             .is_none()
     }
 
@@ -177,16 +226,17 @@ pub fn json_body(builder: Builder, body: Option<Value>) -> Request<Body> {
     }
 }
 
-fn config(data: &Path, token: Option<&str>, scheme: Scheme) -> Config {
-    Config {
+async fn open_state(data: &Path, setup: &Setup) -> AppState {
+    let config = Config {
         port: 0,
         data: data.to_owned(),
-        token: token.map(|token| Token::new(token).unwrap()),
-        scheme,
-        console_host: Some(CONSOLE.parse().unwrap()),
-        indexnow: Switch::Off,
-        fonts: None,
-    }
+        token: setup.token.map(|token| Token::new(token).unwrap()),
+        console_host: setup.console_host.map(|host| host.parse().unwrap()),
+        scheme: setup.scheme,
+        command: None,
+    };
+    let indexnow = IndexNow::with_endpoint(setup.indexnow.clone()).unwrap();
+    AppState::open_with(config, indexnow).await.unwrap()
 }
 
 /// The Markdown body of the published post `sqlite-backups` in [`TestApp::seed_blog`].

@@ -11,7 +11,7 @@ export interface PostForm extends Record<PostTextKey, string> {
 export type PreviewState =
   | { kind: "empty" }
   | { kind: "loading" }
-  | { kind: "ready"; html: string; toc: TocEntry[]; wordCount: number }
+  | { kind: "ready"; html: string; css: string; toc: TocEntry[]; wordCount: number }
   | { kind: "unavailable" }
   | { kind: "failed"; message: string };
 

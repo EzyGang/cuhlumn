@@ -28,7 +28,7 @@ The `Content-Type` header must be one of these types, without regard to case and
 | Empty body | `400` |
 | First bytes do not match the type | `415` |
 | Unknown site | `404` |
-| Same image again | `200` with the same name; the first upload time stays |
+| Same image again | `200` with the same name. The first upload time stays |
 
 ## `MediaSaved`
 

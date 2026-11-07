@@ -1,5 +1,6 @@
 //! Runs the parsed commands against the server.
 
+mod announce;
 mod media;
 mod post;
 mod site;
@@ -39,6 +40,7 @@ pub fn run(cli: Cli) -> anyhow::Result<()> {
         Command::Site(command) => site::run(&Context::admin(connection)?, command),
         Command::Post(command) => post::run(&Context::admin(connection)?, command),
         Command::Media(command) => media::run(&Context::admin(connection)?, command),
+        Command::Announce(command) => announce::run(&Context::admin(connection)?, command),
     }
 }
 

@@ -1,0 +1,293 @@
+name: Release
+run-name: Release v${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version in semver form without the "v" prefix, for example 1.4.0
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/ezygang/cuhlumn
+  VERSION: ${{ inputs.version }}
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - name: Check the branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Run the release from refs/heads/main, not from ${GITHUB_REF}."
+          exit 1
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check the version
+        id: check
+        run: |
+          semver='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(\.(0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*)?$'
+          if ! [[ "$VERSION" =~ $semver ]]; then
+            echo "::error::The version '$VERSION' is not a semver version without build metadata."
+            exit 1
+          fi
+          if [ -n "$(git ls-remote --tags origin "refs/tags/v$VERSION")" ]; then
+            echo "::error::The tag v$VERSION exists."
+            exit 1
+          fi
+          current="$(sed -n '/^\[workspace\.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' Cargo.toml)"
+          if [ -z "$current" ]; then
+            echo "::error::Cargo.toml has no [workspace.package] version."
+            exit 1
+          fi
+          python3 - "$current" "$VERSION" <<'EOF'
+          import sys
+
+          def key(version):
+              core, _, pre = version.partition("-")
+              numbers = tuple(int(part) for part in core.split("."))
+              if not pre:
+                  return numbers, (1,)
+              parts = tuple((0, int(p), "") if p.isdigit() else (1, 0, p) for p in pre.split("."))
+              return numbers, (0, parts)
+
+          current, wanted = sys.argv[1], sys.argv[2]
+          if key(wanted) <= key(current):
+              print(f"::error::The version {wanted} is not higher than the current version {current}.")
+              sys.exit(1)
+          EOF
+          if [[ "$VERSION" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  ci:
+    name: ci
+    needs: validate
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yml
+
+  prepare:
+    name: prepare
+    needs: [validate, ci]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.push.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          ssh-key: ${{ secrets.RELEASE_DEPLOY_KEY }}
+      - name: Set the version
+        run: |
+          sed -i "/^\[workspace\.package\]/,/^\[/s/^version = \".*\"$/version = \"$VERSION\"/" Cargo.toml
+          sed -i "0,/\"version\": \"[^\"]*\"/s//\"version\": \"$VERSION\"/" console/package.json
+          for doc in docs/content/getting-started/installation.md docs/content/reference/api.md; do
+            sed -i -E "s/(\"version\": ?\")[^\"]*\"/\1$VERSION\"/" "$doc"
+          done
+          cargo update --workspace
+      - name: Check the version changes
+        run: |
+          grep -qx "version = \"$VERSION\"" Cargo.toml
+          grep -q "\"version\": \"$VERSION\"" console/package.json
+          for crate in cuhlumn-api cuhlumn-cli cuhlumn-server; do
+            grep -A1 -x "name = \"$crate\"" Cargo.lock | grep -qx "version = \"$VERSION\""
+          done
+          for doc in docs/content/getting-started/installation.md docs/content/reference/api.md; do
+            grep -q "\"version\": \?\"$VERSION\"" "$doc"
+          done
+          git diff --stat
+      - name: Commit, tag, and push
+        id: push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "🔖 chore(release): v$VERSION"
+          git tag -a "v$VERSION" -m "v$VERSION"
+          git push --atomic origin HEAD:main "refs/tags/v$VERSION"
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: build (${{ matrix.platform }})
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.sha }}
+            org.opencontainers.image.licenses=MIT
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=image-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=image-${{ matrix.arch }}
+      - name: Save the digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  smoke:
+    name: smoke
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: digests-amd64
+          path: ${{ runner.temp }}/digests
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Start the stack
+        run: |
+          digest="$(ls "$RUNNER_TEMP/digests")"
+          token="$(openssl rand -hex 32)"
+          echo "::add-mask::$token"
+          {
+            echo "CUHLUMN_IMAGE=$IMAGE@sha256:$digest"
+            echo "CUHLUMN_TOKEN=$token"
+            echo "CUHLUMN_SCHEME=http"
+          } >> "$GITHUB_ENV"
+          export CUHLUMN_IMAGE="$IMAGE@sha256:$digest" CUHLUMN_TOKEN="$token" CUHLUMN_SCHEME=http
+          docker compose pull cuhlumn
+          docker compose up -d --no-build --wait --wait-timeout 120 cuhlumn
+      - name: Check the health answer
+        run: |
+          curl -fsS http://127.0.0.1:8080/api/health \
+            | jq -e --arg version "$VERSION" '.ok == true and .version == $version and .needs_setup == false'
+      - name: Create a site
+        run: |
+          curl -fsS -X PUT http://127.0.0.1:8080/api/sites/harbor.example.com \
+            -H "Authorization: Bearer $CUHLUMN_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"title":"Harbor Notes","author":"Mara Lind","indexnow":false,"brand":{"accent":"#0e7490"}}'
+      - name: Publish a post
+        run: |
+          curl -fsS -X PUT http://127.0.0.1:8080/api/sites/harbor.example.com/posts/sqlite-backups \
+            -H "Authorization: Bearer $CUHLUMN_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"title":"How we back up SQLite","body":"We copy the database file every night.","status":"published"}'
+      - name: Read the post page
+        run: |
+          curl -fsSL -H "Host: harbor.example.com" http://127.0.0.1:8080/sqlite-backups \
+            | grep -F "How we back up SQLite"
+      - name: Show the logs
+        if: failure()
+        run: docker compose logs
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
+
+  publish:
+    name: publish
+    needs: [validate, prepare, build, smoke]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: digests-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push the multi-platform tags
+        env:
+          PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+          REVISION: ${{ needs.prepare.outputs.sha }}
+          SOURCE: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          tags=(-t "$IMAGE:$VERSION")
+          if [ "$PRERELEASE" = "false" ]; then
+            IFS=. read -r major minor _ <<< "$VERSION"
+            tags+=(-t "$IMAGE:$major.$minor" -t "$IMAGE:$major" -t "$IMAGE:latest")
+          fi
+          sources=()
+          for file in "$RUNNER_TEMP"/digests/*; do
+            sources+=("$IMAGE@sha256:$(basename "$file")")
+          done
+          docker buildx imagetools create "${tags[@]}" \
+            --annotation "index:org.opencontainers.image.source=$SOURCE" \
+            --annotation "index:org.opencontainers.image.version=$VERSION" \
+            --annotation "index:org.opencontainers.image.revision=$REVISION" \
+            --annotation "index:org.opencontainers.image.licenses=MIT" \
+            "${sources[@]}"
+          docker buildx imagetools inspect "$IMAGE:$VERSION"
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+        run: |
+          flags=(--verify-tag --generate-notes --title "v$VERSION")
+          if [ "$PRERELEASE" = "true" ]; then
+            flags+=(--prerelease)
+          fi
+          gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" "${flags[@]}"

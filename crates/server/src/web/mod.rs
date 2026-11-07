@@ -15,16 +15,16 @@ use axum::{
 };
 use cuhlumn_api::{
     post::Post,
+    settings::Scheme,
     site::{Site, host::Host},
 };
 use rusqlite::Connection;
 
 use crate::{
-    config::Scheme,
     db::{
         DbError,
         posts::{self, Visibility},
-        sites,
+        sites, unix_now,
     },
     media::name::MediaName,
     render::{blog::Blog, not_found},
@@ -56,12 +56,13 @@ pub async fn public(state: AppState, request: Request) -> Response {
         return no_blog();
     };
     let path = decode_path(parts.uri.path()).into_owned();
-    if let Some(hit) = state.cache().get(&host, &path) {
+    if let Some(hit) = state.cache().get(&host, &path, unix_now()) {
         return hit.respond(&parts.headers);
     }
     let route = Route::parse(&path);
     let generation = state.cache().generation(&host);
-    let scheme = state.config().scheme;
+    let settings = state.settings();
+    let scheme = settings.scheme();
     let with_posts = !matches!(route, Route::Media(_));
     let name = host.clone();
     let load = move |db: &mut Connection| lookup(db, scheme, &name, with_posts);
@@ -71,7 +72,7 @@ pub async fn public(state: AppState, request: Request) -> Response {
                 .uri
                 .path_and_query()
                 .map_or("/", |value| value.as_str());
-            return redirect(&format!("{}{target}", state.config().origin(&site.host)));
+            return redirect(&format!("{}{target}", settings.origin(&site.host)));
         }
         Ok(Some(found)) => found,
         Ok(None) => return no_blog(),
@@ -83,7 +84,7 @@ pub async fn public(state: AppState, request: Request) -> Response {
     if let Route::Media(name) = &route {
         return send_media(&state, &host, name).await;
     }
-    let blog = Arc::new(Blog::new(site, state.config().origin(&host), posts));
+    let blog = Arc::new(Blog::new(site, settings.origin(&host), posts));
     let query = parts.uri.query().map(str::to_owned);
     match pages::build(&state, Arc::clone(&blog), route, query).await {
         Ok(Outcome::Page(cached)) => {

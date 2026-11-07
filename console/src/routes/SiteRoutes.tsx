@@ -1,9 +1,11 @@
 import type { JSX } from "preact";
 import { Redirect, Route, Switch } from "wouter-preact";
 import { AppShellContainer } from "../components/app-shell/containers/AppShell.container";
+import { FontsPage } from "../pages/Fonts.page";
 import { MediaPage } from "../pages/Media.page";
 import { PostEditorPage } from "../pages/PostEditor.page";
 import { PostsPage } from "../pages/Posts.page";
+import { ServerSettingsPage } from "../pages/ServerSettings.page";
 import { SiteSettingsPage } from "../pages/SiteSettings.page";
 import { SitesPage } from "../pages/Sites.page";
 
@@ -11,6 +13,8 @@ export const SiteRoutes = (): JSX.Element => (
   <AppShellContainer>
     <Switch>
       <Route path="/" component={SitesPage} />
+      <Route path="/settings" component={ServerSettingsPage} />
+      <Route path="/fonts" component={FontsPage} />
       <Route path="/new-site">
         <SiteSettingsPage key="create-site" />
       </Route>

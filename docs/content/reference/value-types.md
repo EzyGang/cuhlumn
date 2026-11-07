@@ -69,6 +69,19 @@ After that, a post can have at most 20 tags.
 | `Kind` | `post`, `page` | `post` |
 | `Status` | `draft`, `published` | `draft` |
 | `Font` | `serif`, `sans` | `serif` |
+| `Palette` | `paper`, `slate`, `sepia`, `mono`, `contrast` | `paper` |
+| `Theme` | `system`, `light`, `dark` | `system` |
+| `Width` | `narrow`, `normal`, `wide` | `normal` |
+| `HomeLayout` | `list`, `compact`, `cards` | `list` |
+| `CodeTheme` | `github`, `solarized`, `ocean`, `none` | `github` |
+| `CardStyle` | `dark`, `light`, `accent` | `dark` |
+| `Network` | `github`, `gitlab`, `codeberg`, `mastodon`, `bluesky`, `x`, `threads`, `linkedin`, `youtube`, `instagram`, `discord`, `telegram`, `email` | None, required |
+| `Tone` | `info`, `accent`, `warning` | `info` |
+| `Scheme` | `http`, `https` | `https` |
+| `FontSource` | `upload`, `google` | None, set by the server |
+
+Values are lowercase.
+Another value returns `400` with a message that lists the valid values.
 
 ## TypeScript
 

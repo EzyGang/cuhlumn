@@ -3,6 +3,10 @@
 This page creates a blog, publishes a post, and opens the console.
 The examples use `blog.example.com` as the blog domain and `admin.example.com` as the console domain.
 
+The server must have an admin token.
+Set `CUHLUMN_TOKEN` in the shell to that token.
+See [First launch](installation.md#first-launch).
+
 ## 1. Create a blog
 
 ```sh
@@ -45,13 +49,13 @@ The status is `draft`, so `https://blog.example.com/sqlite-backups/` returns `40
 
 Send the same request with `"status": "published"`.
 The post appears on the home page, in the feed, and in the sitemap.
-The server also sends the post address to IndexNow.
+The server also sends the post address to IndexNow, because `indexnow` is `true` by default for each site.
 
 ## 4. Open the console
 
 1. Open `https://admin.example.com/` in a browser.
-2. Enter the admin token in the token field.
-3. Select **Log in**.
+2. On the **Setup** page of a new server, set the token and complete the setup.
+3. On the login page, enter the admin token in the token field and select **Log in**.
 
 The console shows the blog, its posts, its media, and its settings.
 See [Management console](../console/index.md).

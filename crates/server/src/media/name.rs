@@ -2,10 +2,10 @@
 
 use std::fmt;
 
-use cuhlumn_api::site::host::Host;
+use cuhlumn_api::{settings::Scheme, site::host::Host};
 use sha2::{Digest, Sha256};
 
-use crate::{config::Scheme, media::format::ImageFormat};
+use crate::media::format::ImageFormat;
 
 /// The file name of an uploaded image: 32 hex digits of its SHA-256 digest and an extension.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

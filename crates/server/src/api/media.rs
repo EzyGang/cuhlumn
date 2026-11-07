@@ -86,7 +86,7 @@ pub async fn upload(
     }
     state.cache().invalidate(&host);
     Ok(Json(MediaSaved {
-        url: name.url(state.config().scheme, &host),
+        url: name.url(state.settings().scheme(), &host),
         name: name.into(),
     }))
 }
@@ -101,7 +101,7 @@ pub async fn list(
     State(state): State<AppState>,
     SitePath(host): SitePath,
 ) -> Result<Json<Vec<MediaItem>>, ApiError> {
-    let scheme = state.config().scheme;
+    let scheme = state.settings().scheme();
     let items = state
         .db()
         .call(move |db| {

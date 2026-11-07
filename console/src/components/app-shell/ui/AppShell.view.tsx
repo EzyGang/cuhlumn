@@ -4,6 +4,7 @@ import { LogOut } from "lucide-preact";
 import { Button } from "../../shared/ui/Button.view";
 import { Select } from "../../shared/ui/Select.view";
 import type { AppShellProps } from "../../../types/appShell";
+import { ServerNavContainer } from "../containers/ServerNav.container";
 import { SiteNavContainer } from "../containers/SiteNav.container";
 
 export const AppShellView = ({ data, status, actions, children }: AppShellProps): JSX.Element => (
@@ -21,12 +22,8 @@ export const AppShellView = ({ data, status, actions, children }: AppShellProps)
           onValueChange={actions.switchSite}
           class="w-64 max-w-full"
         />
-        <Button
-          variant="ghost"
-          class="ml-auto"
-          disabled={status.loggingOut}
-          onClick={actions.logout}
-        >
+        <ServerNavContainer />
+        <Button variant="ghost" disabled={status.loggingOut} onClick={actions.logout}>
           <LogOut size={14} aria-hidden="true" />
           Log out
         </Button>

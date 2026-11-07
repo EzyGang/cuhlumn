@@ -1,6 +1,7 @@
 import type { JSX } from "preact";
 import { LoadGate } from "../../shared/ui/LoadGate.view";
 import { useSiteSettingsContext } from "../context/SiteSettingsContext";
+import { AnnouncementSection } from "./announcement/AnnouncementSection.view";
 import { AppearanceSection } from "./appearance/AppearanceSection.view";
 import { DangerZone } from "./DangerZone.view";
 import { DomainSection } from "./DomainSection.view";
@@ -21,6 +22,7 @@ export const SiteSettingsView = (): JSX.Element => {
           <div class="flex min-w-0 flex-col gap-6">
             <DomainSection />
             <GeneralSection />
+            <AnnouncementSection />
           </div>
           <div class="flex min-w-0 flex-col gap-6">
             <AppearanceSection />

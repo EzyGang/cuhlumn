@@ -2,23 +2,26 @@
 
 pub mod auth;
 pub mod error;
+pub mod fonts;
 pub mod json;
 pub mod media;
 pub mod path;
 pub mod posts;
 pub mod preview;
 pub mod session;
+pub mod settings;
 pub mod sites;
 
 use axum::{
     Router,
-    extract::DefaultBodyLimit,
-    routing::{delete, get, post},
+    extract::{DefaultBodyLimit, State},
+    routing::{delete, get, post, put},
 };
 use cuhlumn_api::wire::Health;
 
 use crate::{
     api::{error::ApiError, json::Json},
+    fonts::UPLOAD_LIMIT as FONT_LIMIT,
     state::AppState,
 };
 
@@ -26,6 +29,17 @@ use crate::{
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/health", get(health))
+        .route("/setup", post(settings::setup))
+        .route("/settings", get(settings::get).put(settings::put))
+        .route("/settings/token", put(settings::put_token))
+        .route(
+            "/fonts",
+            post(fonts::upload)
+                .layer(DefaultBodyLimit::max(FONT_LIMIT))
+                .get(fonts::list),
+        )
+        .route("/fonts/google", post(fonts::import_google))
+        .route("/fonts/{name}", delete(fonts::delete))
         .route(
             "/session",
             post(session::login)
@@ -54,10 +68,11 @@ pub fn routes() -> Router<AppState> {
         .method_not_allowed_fallback(method_not_allowed)
 }
 
-async fn health() -> Json<Health> {
+async fn health(State(state): State<AppState>) -> Json<Health> {
     Json(Health {
         ok: true,
         version: env!("CARGO_PKG_VERSION").to_owned(),
+        needs_setup: state.settings().needs_setup(),
     })
 }
 

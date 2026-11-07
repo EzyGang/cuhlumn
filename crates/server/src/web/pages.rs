@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use crate::{
+    db::unix_now,
     og::{self, CardText, OgError},
     render::{
         article,
@@ -12,7 +13,7 @@ use crate::{
     },
     state::AppState,
     web::{
-        cache::Cached,
+        cache::cached::Cached,
         route::{Route, encode_segment},
     },
 };
@@ -77,8 +78,7 @@ pub async fn build(
             return Ok(tokio::task::spawn_blocking(task).await?);
         }
     };
-    let fonts = state.config().fonts.clone();
-    let card = og::prepare(state.media(), fonts, &blog.site, text).await?;
+    let card = og::prepare(state.media(), &blog.site, text).await?;
     let task = move || {
         card.draw()
             .map(|png| Outcome::Page(Cached::new(PNG, png, IMAGE_MAX_AGE)))
@@ -95,11 +95,11 @@ fn render(blog: &Blog, route: Route, query: Option<&str>) -> Outcome {
         None => Outcome::Redirect(path),
     };
     match route {
-        Route::Home => html(home::render(blog)),
+        Route::Home => html(blog, home::render(blog)),
         Route::Entry(slug) | Route::Bare(slug) if blog.is_home(&slug) => redirect("/".to_owned()),
-        Route::Entry(slug) => blog
-            .find(&slug)
-            .map_or(Outcome::Missing, |entry| html(article::render(blog, entry))),
+        Route::Entry(slug) => blog.find(&slug).map_or(Outcome::Missing, |entry| {
+            html(blog, article::render(blog, entry))
+        }),
         Route::Bare(slug) => match blog.find(&slug) {
             Some(_) => redirect(format!("/{}/", encode_segment(slug.as_str()))),
             None => Outcome::Missing,
@@ -107,7 +107,9 @@ fn render(blog: &Blog, route: Route, query: Option<&str>) -> Outcome {
         Route::Markdown(slug) => blog.find(&slug).map_or(Outcome::Missing, |entry| {
             file(MARKDOWN, copy::render(blog, entry))
         }),
-        Route::Tag(slug) => tag::render(blog, &slug).map_or(Outcome::Missing, html),
+        Route::Tag(slug) => {
+            tag::render(blog, &slug).map_or(Outcome::Missing, |body| html(blog, body))
+        }
         Route::BareTag(slug) if tag::exists(blog, &slug) => {
             redirect(format!("/tags/{}/", encode_segment(&slug)))
         }
@@ -130,8 +132,14 @@ fn render(blog: &Blog, route: Route, query: Option<&str>) -> Outcome {
     }
 }
 
-fn html(body: String) -> Outcome {
-    Outcome::Page(Cached::new(HTML, body, PAGE_MAX_AGE))
+/// Returns an HTML page that stays cached until the next change of the announcement bar.
+fn html(blog: &Blog, body: String) -> Outcome {
+    let valid_until = blog
+        .site
+        .announcement
+        .as_ref()
+        .and_then(|announcement| announcement.next_change(unix_now()));
+    Outcome::Page(Cached::new(HTML, body, PAGE_MAX_AGE).valid_until(valid_until))
 }
 
 fn file(content_type: &'static str, body: String) -> Outcome {

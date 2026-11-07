@@ -11,14 +11,15 @@
 )]
 mod common;
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use axum::http::StatusCode;
 use cuhlumn_api::site::host::Host;
-use cuhlumn_server::web::cache::Cached;
+use cuhlumn_server::web::cache::cached::Cached;
 use serde_json::json;
+use tokio::{io::AsyncReadExt, net::TcpListener};
 
-use crate::common::{HOST, TestApp};
+use crate::common::{HOST, Setup, TestApp};
 
 fn post_path(slug: &str) -> String {
     format!("/api/sites/{HOST}/posts/{slug}")
@@ -39,7 +40,39 @@ async fn published_post_gets_url_tags_and_time() {
     assert_eq!(saved["post"]["tags"], json!(["Databases", "Operations"]));
     assert!(saved["post"]["published_at"].is_i64());
     assert_eq!(saved["post"]["kind"], "post");
-    assert!(!app.state.indexnow().is_enabled());
+}
+
+#[tokio::test]
+async fn publication_pings_indexnow_only_when_the_site_turns_it_on() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let app = TestApp::open(Setup {
+        indexnow: format!("http://{}/indexnow", listener.local_addr().unwrap()),
+        ..Setup::default()
+    })
+    .await;
+    let site = json!({"title": "Harbor Notes", "indexnow": false});
+    assert_eq!(app.put_site(site).await.status, StatusCode::OK);
+    let post = json!({"title": "How we back up SQLite", "body": "Text.", "status": "published"});
+    assert_eq!(
+        app.put_post("sqlite-backups", post.clone()).await.status,
+        StatusCode::OK
+    );
+    let quiet = tokio::time::timeout(Duration::from_millis(300), listener.accept()).await;
+    assert!(quiet.is_err(), "a site without IndexNow sent a ping");
+    let site = json!({"title": "Harbor Notes", "indexnow": true});
+    assert_eq!(app.put_site(site).await.status, StatusCode::OK);
+    assert_eq!(
+        app.put_post("sqlite-backups", post).await.status,
+        StatusCode::OK
+    );
+    let (mut socket, _) = tokio::time::timeout(Duration::from_secs(10), listener.accept())
+        .await
+        .unwrap()
+        .unwrap();
+    let mut request = vec![0_u8; 8192];
+    let read = socket.read(&mut request).await.unwrap();
+    let request = String::from_utf8_lossy(&request[..read]).into_owned();
+    assert!(request.starts_with("POST /indexnow "), "{request}");
 }
 
 #[tokio::test]
@@ -236,14 +269,14 @@ async fn writes_invalidate_the_page_cache() {
         generation,
         Arc::new(Cached::new("text/plain", "old", 60)),
     );
-    assert!(cache.get(&host, "/").is_some());
+    assert!(cache.get(&host, "/", 0).is_some());
     app.api(
         "PUT",
         &post_path("new"),
         Some(json!({"title": "New", "body": "x"})),
     )
     .await;
-    assert!(cache.get(&host, "/").is_none());
+    assert!(cache.get(&host, "/", 0).is_none());
     assert!(cache.generation(&host) > generation);
 }
 

@@ -59,6 +59,8 @@ pub struct Preview {
     /// The table of contents.
     pub toc: Vec<TocEntry>,
     pub word_count: u32,
+    /// The site stylesheet, so the preview matches the blog.
+    pub css: String,
 }
 
 /// One heading in a table of contents.
@@ -98,6 +100,8 @@ pub struct Health {
     pub ok: bool,
     /// The server version.
     pub version: String,
+    /// The server has no admin token yet, so the console must show the setup page.
+    pub needs_setup: bool,
 }
 
 /// The body of every failed API response.
@@ -142,8 +146,10 @@ pub enum ErrorCode {
     PayloadTooLarge,
     /// The content type is not supported or does not match the body.
     UnsupportedMediaType,
-    /// The server has no admin token, so the API is off.
-    ApiDisabled,
+    /// The server has no admin token yet.
+    NeedsSetup,
+    /// An environment variable sets this value.
+    Locked,
     /// The console build is missing.
     ConsoleUnavailable,
     /// The server failed.
@@ -164,7 +170,8 @@ impl ErrorCode {
             Self::Conflict => "conflict",
             Self::PayloadTooLarge => "payload_too_large",
             Self::UnsupportedMediaType => "unsupported_media_type",
-            Self::ApiDisabled => "api_disabled",
+            Self::NeedsSetup => "needs_setup",
+            Self::Locked => "locked",
             Self::ConsoleUnavailable => "console_unavailable",
             Self::Internal => "internal",
         }
@@ -201,7 +208,8 @@ mod tests {
             ErrorCode::Conflict,
             ErrorCode::PayloadTooLarge,
             ErrorCode::UnsupportedMediaType,
-            ErrorCode::ApiDisabled,
+            ErrorCode::NeedsSetup,
+            ErrorCode::Locked,
             ErrorCode::ConsoleUnavailable,
             ErrorCode::Internal,
         ];

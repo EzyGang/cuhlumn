@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 
 use crate::render::{
     blog::{Blog, Entry},
-    iso,
+    iso, social,
 };
 
 /// The number of posts that the home page data lists.
@@ -73,12 +73,18 @@ pub fn script(data: &Value) -> Markup {
 }
 
 fn publisher(blog: &Blog) -> Value {
-    let logo = match &blog.site.brand.logo {
+    let brand = &blog.site.brand;
+    let logo = match &brand.logo {
         Some(logo) => blog.absolute(logo),
         None => format!("{}/favicon.svg", blog.origin),
     };
-    json!({"@type": "Organization", "name": blog.site.title, "url": blog.root_url(),
-           "logo": {"@type": "ImageObject", "url": logo}})
+    let mut publisher = json!({"@type": "Organization", "name": blog.site.title, "url": blog.root_url(),
+           "logo": {"@type": "ImageObject", "url": logo}});
+    let profiles = social::profiles(&brand.social);
+    if !profiles.is_empty() {
+        publisher["sameAs"] = json!(profiles);
+    }
+    publisher
 }
 
 fn author(blog: &Blog) -> Value {

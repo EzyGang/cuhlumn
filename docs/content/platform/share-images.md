@@ -6,19 +6,34 @@ Social networks and chat apps show this image when someone shares a link.
 | Address | Title | Subtitle | Bottom right |
 | --- | --- | --- | --- |
 | `/og.png` | Site title | Site description | Empty |
-| `/og/{slug}.png` | Entry title | Entry description | Date and reading time, for published posts |
+| `/og/{slug}.png` | Entry title | Entry description | Date and reading time, for published posts, when `card_meta` is `true` |
 
 ## Layout
 
-- A solid dark background with an accent band on the left edge and an accent disc and ring in the top right corner
-- The logo or the first letter of the site title on an accent badge, at the top left
+- A solid background with a band on the left edge and a disc and ring in the top right corner
+- The logo or the first letter of the site title on a badge, at the top left
 - The site title next to the badge, unless it is the same as the image title
 - The title in large bold text
-- The subtitle in light gray below the title, on one or two lines
+- The subtitle in a softer color below the title, on one or two lines
 - A thin rule, then the canonical domain at the bottom left and the meta text at the bottom right
 
 The title and the subtitle are centered vertically between the top row and the rule.
-The letter on the badge is white or black, whichever has more contrast with the accent.
+On an accent badge, the letter is white or black, whichever has more contrast with the accent.
+
+## Card styles
+
+The `brand.card_style` setting selects the colors of the image.
+
+| `card_style` | Background | Text | Shapes and badge |
+| --- | --- | --- | --- |
+| `dark` | Near black, the look of the first release | Light grey | Accent |
+| `light` | Off-white | Near black | Accent |
+| `accent` | The accent color | White or black, whichever has more contrast with the accent | The text color, partly transparent |
+
+## Card meta
+
+With `brand.card_meta` set to `false`, post images have no date and no reading time.
+The bottom right corner then stays empty.
 
 ## Title size
 
@@ -45,9 +60,24 @@ In other cases the image shows the first letter of the site title.
 
 ## Fonts
 
-The image uses Inter, then Arial or DejaVu Sans.
+The image uses the font list `Inter, Arial, DejaVu Sans, sans-serif`.
 The Docker image contains Inter.
-Set `CUHLUMN_FONTS` to a folder to load more fonts.
+
+The server loads the system fonts and every font of the font library.
+When Inter has no glyph for a character, the server uses a library font or a system font that has it.
+Add fonts for scripts such as Japanese, Arabic, or Devanagari to show titles in those scripts.
+
+### Font library
+
+The font library is the `fonts/` folder in the data folder.
+Manage it on the **Fonts** page of the console, or through the [fonts API](../reference/fonts.md).
+
+- Upload a TTF, OTF, or TTC file of up to 20 MiB.
+- Or import a family from Google Fonts with a `https://fonts.google.com/specimen/{Family}` address or a `https://fonts.googleapis.com/css2?family=…` address.
+- An import downloads at most 20 files, each up to 20 MiB, only from `fonts.gstatic.com`.
+
+After each upload, import, or deletion, the server loads the fonts again and clears every cached page and image.
+The next request draws the images with the new fonts.
 
 ## Custom share images
 

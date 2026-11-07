@@ -13,7 +13,12 @@ import type { SiteForm } from "../../../types/siteSettings";
 import { takeDraft } from "../../../utils/drafts";
 import type { FieldErrors } from "../../../utils/fieldErrors";
 import { reportApiError, reportFormError } from "../../../utils/reportApiError";
-import { formToSiteInput, siteFieldPaths, siteToForm } from "../../../utils/siteForm";
+import {
+  formToSiteInput,
+  refineFieldErrors,
+  siteFieldPaths,
+  siteToForm,
+} from "../../../utils/siteForm";
 import { showToast } from "../../shared/ui/Toast.view";
 
 interface SitePersistence {
@@ -83,7 +88,8 @@ const save = async (target: SiteTarget, saving: Signal<boolean>): Promise<void> 
     await persist(target);
   } catch (error) {
     const known = siteFieldPaths(target.form.value);
-    target.errors.value = reportFormError(error, known, "Cannot save the site");
+    const fields = reportFormError(error, known, "Cannot save the site");
+    target.errors.value = refineFieldErrors(fields, known);
   } finally {
     saving.value = false;
   }

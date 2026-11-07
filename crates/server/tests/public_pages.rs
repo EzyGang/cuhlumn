@@ -13,6 +13,7 @@ mod common;
 
 use axum::{body::Body, http::StatusCode};
 use cuhlumn_api::site::host::Host;
+use cuhlumn_server::db::unix_now;
 use serde_json::{Value, json};
 
 use crate::common::{
@@ -149,7 +150,12 @@ async fn caching_answers_304_and_gzip() {
     let first = app.get("/sqlite-backups/").await;
     assert_eq!(first.header("cache-control"), "public, max-age=60");
     let host = Host::new(HOST).unwrap();
-    assert!(app.state.cache().get(&host, "/sqlite-backups/").is_some());
+    assert!(
+        app.state
+            .cache()
+            .get(&host, "/sqlite-backups/", unix_now())
+            .is_some()
+    );
     let etag = first.header("etag").to_owned();
     let fresh = app
         .get_on(HOST, "/sqlite-backups/", &[("if-none-match", &etag)])
@@ -299,7 +305,12 @@ async fn not_found_page_has_no_canonical_or_json_ld() {
     );
     assert!(!html.contains("rel=\"canonical\"") && !html.contains("application/ld+json"));
     let host = Host::new(HOST).unwrap();
-    assert!(app.state.cache().get(&host, "/nothing/here").is_none());
+    assert!(
+        app.state
+            .cache()
+            .get(&host, "/nothing/here", unix_now())
+            .is_none()
+    );
 }
 
 #[tokio::test]
@@ -333,14 +344,14 @@ async fn write_on_one_site_keeps_the_cache_of_another() {
     assert_eq!(app.get_on(other, "/", &[]).await.status, StatusCode::OK);
     app.get("/").await;
     let (other, host) = (Host::new(other).unwrap(), Host::new(HOST).unwrap());
-    assert!(app.state.cache().get(&other, "/").is_some());
+    assert!(app.state.cache().get(&other, "/", unix_now()).is_some());
     app.put_post(
         "sqlite-backups",
         json!({"title": "Edited", "body": "New.", "status": "published"}),
     )
     .await;
-    assert!(app.state.cache().get(&host, "/").is_none());
-    assert!(app.state.cache().get(&other, "/").is_some());
+    assert!(app.state.cache().get(&host, "/", unix_now()).is_none());
+    assert!(app.state.cache().get(&other, "/", unix_now()).is_some());
 }
 
 #[tokio::test]

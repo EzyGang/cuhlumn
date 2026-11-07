@@ -2,14 +2,12 @@
 
 use cuhlumn_api::{
     post::{Kind, Post, PostInput, Status, slug::Slug},
+    settings::Scheme,
     site::host::Host,
 };
 use rusqlite::{Connection, OptionalExtension, Row, named_params, params};
 
-use crate::{
-    config::Scheme,
-    db::{DbError, parse, parse_json, parse_optional},
-};
+use crate::db::{DbError, parse, parse_json, parse_optional};
 
 /// The posts that a list query returns.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

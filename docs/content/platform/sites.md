@@ -27,13 +27,19 @@ A request to an alias returns `301` to the same path and query on the canonical 
 
 ## Unknown domains
 
-A request to a domain that is not a site or an alias returns `404` with the text `No blog lives at this address.`
-The `/api` routes still answer on that domain.
+Without a console domain, a domain that is not a site or an alias serves the console.
+With a console domain, a request to any other unknown domain returns `404` with the text `No blog lives at this address.`
+The `/api` routes still answer on every domain.
 
 ## Console domain
 
-The domain in `CUHLUMN_CONSOLE_HOST` serves the management console instead of a blog.
-Do not use the console domain as a site domain.
+The console domain serves the management console instead of a blog.
+The admin sets it on the **Server settings** page of the console, or with `CUHLUMN_CONSOLE_HOST`.
+
+- With a console domain, only that domain serves the console.
+- Without a console domain, every domain that is not a site domain or an alias serves the console.
+- A site write with the console domain as its domain or alias returns `409` with the code `conflict`.
+- A console domain that belongs to a site returns `409` from `PUT /api/settings`.
 
 ## Site settings
 
@@ -48,6 +54,8 @@ Do not use the console domain as a site domain.
 | `lang` | The `lang` attribute, `inLanguage` in JSON-LD, and `xml:lang` in the feed |
 | `home` | A page slug to show at `/` |
 | `indexnow_key` | The key for IndexNow, served at `/{key}.txt` |
+| `indexnow` | Sends IndexNow notifications on publication, `true` by default |
+| `announcement` | The [announcement bar](announcements.md) above every page |
 | `brand` | The [appearance](appearance.md) settings |
 
 See [Sites reference](../reference/sites.md) for types, defaults, and limits.

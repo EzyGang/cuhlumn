@@ -3,4 +3,4 @@
 /**
  * The kind of a failure.
  */
-export type ErrorCode = "bad_request" | "validation" | "unauthorized" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "payload_too_large" | "unsupported_media_type" | "api_disabled" | "console_unavailable" | "internal";
+export type ErrorCode = "bad_request" | "validation" | "unauthorized" | "forbidden" | "not_found" | "method_not_allowed" | "conflict" | "payload_too_large" | "unsupported_media_type" | "needs_setup" | "locked" | "console_unavailable" | "internal";

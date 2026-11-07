@@ -7,23 +7,28 @@ use axum::{
     },
     response::{IntoResponse, Response},
 };
-use cuhlumn_api::wire::{Session, SessionInput};
+use cuhlumn_api::{
+    settings::Scheme,
+    site::host::Host,
+    wire::{Session, SessionInput},
+};
 
 use crate::{
     api::{
-        auth::{SESSION_COOKIE, check_origin, is_console_request, session_cookie},
+        auth::{SESSION_COOKIE, check_origin, console_host, session_cookie},
         error::ApiError,
         json::Json,
     },
-    config::{Scheme, Token},
+    config::Token,
     db::{sessions, unix_now},
     state::AppState,
 };
 
-/// Proof that the API is on and that the request addresses the console host.
+/// Proof that the server has a token and that the request addresses a console host.
 #[derive(Clone, Debug)]
 pub struct ConsoleHost {
     token: Token,
+    host: Host,
 }
 
 /// Logs in with the admin token and sets the session cookie.
@@ -38,26 +43,12 @@ pub async fn login(
     Json(input): Json<SessionInput>,
 ) -> Result<Response, ApiError> {
     if headers.contains_key(header::ORIGIN) {
-        check_origin(&headers, &state)?;
+        check_origin(&headers, &console.host)?;
     }
     if !console.token.matches(&input.token) {
         return Err(ApiError::Unauthorized);
     }
-    let mut id = [0_u8; ID_BYTES];
-    getrandom::fill(&mut id).map_err(ApiError::Random)?;
-    let id = hex::encode(id);
-    let id_hash = console.token.session_hash(&id);
-    let now = unix_now();
-    let expires_at = now + SESSION_SECONDS;
-    state
-        .db()
-        .call(move |db| {
-            sessions::delete_expired(db, now)?;
-            sessions::create(db, &id_hash, expires_at)
-        })
-        .await?;
-    let cookie = session_cookie_header(state.config().scheme, &id, SESSION_SECONDS)?;
-    Ok(([(header::SET_COOKIE, cookie)], Json(Session { expires_at })).into_response())
+    start(&state, &console.token, true).await
 }
 
 /// Returns the session of the cookie.
@@ -92,15 +83,48 @@ pub async fn logout(
     headers: HeaderMap,
 ) -> Result<Response, ApiError> {
     if let Some(id) = session_cookie(&headers) {
-        check_origin(&headers, &state)?;
+        check_origin(&headers, &console.host)?;
         let id_hash = console.token.session_hash(id);
         state
             .db()
             .call(move |db| sessions::delete(db, &id_hash))
             .await?;
     }
-    let cookie = session_cookie_header(state.config().scheme, "", 0)?;
+    let cookie = session_cookie_header(state.settings().scheme(), "", 0)?;
     Ok((StatusCode::NO_CONTENT, [(header::SET_COOKIE, cookie)]).into_response())
+}
+
+/// Creates a session for `token` and returns its [`Session`] body.
+///
+/// The response sets the session cookie only when `set_cookie` is true, which callers use for console requests.
+///
+/// # Errors
+///
+/// Returns [`ApiError`] when the random source or the database fails.
+pub async fn start(
+    state: &AppState,
+    token: &Token,
+    set_cookie: bool,
+) -> Result<Response, ApiError> {
+    let mut id = [0_u8; ID_BYTES];
+    getrandom::fill(&mut id).map_err(ApiError::Random)?;
+    let id = hex::encode(id);
+    let id_hash = token.session_hash(&id);
+    let now = unix_now();
+    let expires_at = now + SESSION_SECONDS;
+    state
+        .db()
+        .call(move |db| {
+            sessions::delete_expired(db, now)?;
+            sessions::create(db, &id_hash, expires_at)
+        })
+        .await?;
+    let body = Json(Session { expires_at });
+    if !set_cookie {
+        return Ok(body.into_response());
+    }
+    let cookie = session_cookie_header(state.settings().scheme(), &id, SESSION_SECONDS)?;
+    Ok(([(header::SET_COOKIE, cookie)], body).into_response())
 }
 
 const ID_BYTES: usize = 32;
@@ -113,15 +137,17 @@ impl FromRequestParts<AppState> for ConsoleHost {
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        let token = state.config().token().ok_or(ApiError::ApiDisabled)?;
-        if !is_console_request(parts, state) {
+        let token = state
+            .settings()
+            .token()
+            .cloned()
+            .ok_or(ApiError::NeedsSetup)?;
+        let Some(host) = console_host(&parts.headers, &parts.uri, state).await? else {
             return Err(ApiError::NotFound(
                 "sessions are available only on the console host".to_owned(),
             ));
-        }
-        Ok(Self {
-            token: token.clone(),
-        })
+        };
+        Ok(Self { token, host })
     }
 }
 

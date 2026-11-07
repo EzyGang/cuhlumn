@@ -19,7 +19,8 @@ pub(crate) fn apply(connection: &mut Connection) -> rusqlite::Result<()> {
 }
 
 /// The migrations in order. Never change a released migration; add a new one.
-const MIGRATIONS: &[&str] = &[r"
+pub(super) const MIGRATIONS: &[&str] = &[
+    r"
 CREATE TABLE sites (
   host TEXT PRIMARY KEY,
   title TEXT NOT NULL,
@@ -79,4 +80,36 @@ CREATE TABLE sessions (
   id_hash TEXT PRIMARY KEY,
   expires_at INTEGER NOT NULL
 ) STRICT;
-"];
+",
+    r"
+ALTER TABLE sites ADD COLUMN palette TEXT NOT NULL DEFAULT 'paper';
+ALTER TABLE sites ADD COLUMN theme TEXT NOT NULL DEFAULT 'system';
+ALTER TABLE sites ADD COLUMN theme_toggle INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE sites ADD COLUMN width TEXT NOT NULL DEFAULT 'normal';
+ALTER TABLE sites ADD COLUMN home_layout TEXT NOT NULL DEFAULT 'list';
+ALTER TABLE sites ADD COLUMN social TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE sites ADD COLUMN social_in_header INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE sites ADD COLUMN code_theme TEXT NOT NULL DEFAULT 'github';
+ALTER TABLE sites ADD COLUMN card_style TEXT NOT NULL DEFAULT 'dark';
+ALTER TABLE sites ADD COLUMN card_meta INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE sites ADD COLUMN indexnow INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE sites ADD COLUMN announcement TEXT;
+
+CREATE TABLE settings (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  token_digest TEXT,
+  console_host TEXT,
+  scheme TEXT,
+  updated_at INTEGER NOT NULL
+) STRICT;
+INSERT INTO settings (id, updated_at) VALUES (1, CAST(strftime('%s', 'now') AS INTEGER));
+
+CREATE TABLE fonts (
+  name TEXT PRIMARY KEY,
+  families TEXT NOT NULL,
+  source TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  created_at INTEGER NOT NULL
+) STRICT;
+",
+];

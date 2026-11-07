@@ -1,10 +1,12 @@
 //! The page for addresses that do not exist. It has no canonical address and no JSON-LD.
 
+use cuhlumn_api::site::theme::HomeLayout;
 use maud::html;
 
 use crate::render::{
     blog::{Blog, Entry},
-    layout::{page, post_list},
+    layout::page,
+    listing,
     meta::Head,
 };
 
@@ -27,7 +29,7 @@ pub fn render(blog: &Blog) -> String {
     let body = html! {
         h1 { "Page not found" }
         p.intro { "No page lives at this address. Try one of the latest posts." }
-        (post_list(&latest, false))
+        (listing::posts(&latest, false, HomeLayout::List))
     };
     page(blog, &head, body)
 }

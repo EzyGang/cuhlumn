@@ -1,12 +1,12 @@
 use cuhlumn_api::{
     post::{PostInput, Status, slug::Slug},
+    settings::Scheme,
     site::{SiteInput, host::Host, indexnow_key::IndexNowKey},
 };
 use rusqlite::Connection;
 use serde_json::json;
 
 use crate::{
-    config::Scheme,
     db::{Database, DbError, media, posts, sessions, sites},
     media::{format::ImageFormat, name::MediaName},
 };
@@ -51,7 +51,7 @@ fn migrations_are_idempotent() {
     let version: i64 = connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 1);
+    assert_eq!(version, 2);
 }
 
 #[test]

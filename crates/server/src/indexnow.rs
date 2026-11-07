@@ -2,18 +2,17 @@
 //!
 //! See the [IndexNow protocol](https://www.indexnow.org/documentation).
 
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
-use cuhlumn_api::site::Site;
+use cuhlumn_api::{settings::Scheme, site::Site};
 use serde::Serialize;
 use tokio::task::JoinHandle;
 
-use crate::config::{Scheme, Switch};
-
-/// The IndexNow client. It sends nothing when the setting is off.
+/// The IndexNow client. Callers ping only for sites that turn IndexNow on.
 #[derive(Clone, Debug)]
 pub struct IndexNow {
-    client: Option<reqwest::Client>,
+    client: reqwest::Client,
+    endpoint: Arc<str>,
 }
 
 #[derive(Serialize)]
@@ -29,30 +28,34 @@ const ENDPOINT: &str = "https://api.indexnow.org/indexnow";
 const TIMEOUT: Duration = Duration::from_secs(15);
 
 impl IndexNow {
-    /// Builds the client when `switch` is on.
+    /// Builds the client for the public IndexNow endpoint.
     ///
     /// # Errors
     ///
     /// Returns [`reqwest::Error`] when the HTTP client cannot be built.
-    pub fn new(switch: Switch) -> Result<Self, reqwest::Error> {
-        let client = match switch {
-            Switch::On => Some(reqwest::Client::builder().timeout(TIMEOUT).build()?),
-            Switch::Off => None,
-        };
-        Ok(Self { client })
+    pub fn new() -> Result<Self, reqwest::Error> {
+        Self::with_endpoint(ENDPOINT.to_owned())
     }
 
-    /// Returns `true` when pings go out.
-    #[must_use]
-    pub fn is_enabled(&self) -> bool {
-        self.client.is_some()
+    /// Builds the client for another endpoint, such as a local test server.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`reqwest::Error`] when the HTTP client cannot be built.
+    pub fn with_endpoint(endpoint: String) -> Result<Self, reqwest::Error> {
+        Ok(Self {
+            client: reqwest::Client::builder().timeout(TIMEOUT).build()?,
+            endpoint: endpoint.into(),
+        })
     }
 
     /// Sends the addresses of `site` in a background task and logs the result.
     ///
-    /// Returns `None` without a task when IndexNow is off.
+    /// Returns `None` without a task when the site turns IndexNow off.
     pub fn ping(&self, scheme: Scheme, site: &Site, urls: Vec<String>) -> Option<JoinHandle<()>> {
-        let client = self.client.clone()?;
+        if !site.indexnow {
+            return None;
+        }
         let host = site.host.as_str();
         let key = site.indexnow_key.as_str();
         let body = Ping {
@@ -61,7 +64,7 @@ impl IndexNow {
             key_location: format!("{scheme}://{host}/{key}.txt"),
             url_list: urls,
         };
-        let request = client.post(ENDPOINT).json(&body);
+        let request = self.client.post(&*self.endpoint).json(&body);
         let host = host.to_owned();
         Some(tokio::spawn(async move {
             match request.send().await {
@@ -76,20 +79,18 @@ impl IndexNow {
 
 #[cfg(test)]
 mod tests {
-    use cuhlumn_api::site::{Brand, Site, host::Host, indexnow_key::IndexNowKey, lang::Lang};
-
-    use crate::{
-        config::{Scheme, Switch},
-        indexnow::IndexNow,
+    use cuhlumn_api::{
+        settings::Scheme,
+        site::{Site, brand::Brand, host::Host, indexnow_key::IndexNowKey, lang::Lang},
     };
+    use tokio::{io::AsyncReadExt, net::TcpListener};
 
-    #[tokio::test]
-    async fn off_sends_nothing() {
-        let indexnow = IndexNow::new(Switch::Off).unwrap();
-        assert!(!indexnow.is_enabled());
-        let site = Site {
-            host: Host::new("blog.example.com").unwrap(),
-            title: "Notes".to_owned(),
+    use crate::indexnow::IndexNow;
+
+    fn site(indexnow: bool) -> Site {
+        Site {
+            host: Host::new("harbor.example.com").unwrap(),
+            title: "Harbor Notes".to_owned(),
             description: String::new(),
             aliases: Vec::new(),
             author: String::new(),
@@ -101,9 +102,30 @@ mod tests {
             home: None,
             indexnow_key: IndexNowKey::new("0123456789abcdef").unwrap(),
             brand: Brand::default(),
+            indexnow,
+            announcement: None,
             updated_at: 0,
-        };
-        let urls = vec!["https://blog.example.com/a/".to_owned()];
-        assert!(indexnow.ping(Scheme::Https, &site, urls).is_none());
+        }
+    }
+
+    #[tokio::test]
+    async fn pings_only_sites_that_turn_it_on() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let endpoint = format!("http://{}/indexnow", listener.local_addr().unwrap());
+        let indexnow = IndexNow::with_endpoint(endpoint).unwrap();
+        let urls = vec!["https://harbor.example.com/sqlite-backups/".to_owned()];
+        assert!(
+            indexnow
+                .ping(Scheme::Https, &site(false), urls.clone())
+                .is_none()
+        );
+        let task = indexnow.ping(Scheme::Https, &site(true), urls).unwrap();
+        let (mut socket, _) = listener.accept().await.unwrap();
+        let mut request = vec![0_u8; 4096];
+        let read = socket.read(&mut request).await.unwrap();
+        let request = String::from_utf8_lossy(&request[..read]).into_owned();
+        assert!(request.starts_with("POST /indexnow "), "{request}");
+        drop(socket);
+        task.await.unwrap();
     }
 }

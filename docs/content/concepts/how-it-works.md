@@ -8,12 +8,14 @@ This page explains how a request becomes an answer.
 | Component | Technology | Role |
 | --- | --- | --- |
 | HTTP server | axum and tokio | Routes requests by path and by domain |
-| Database | SQLite through rusqlite | Stores sites, aliases, posts, media records, and sessions |
+| Database | SQLite through rusqlite | Stores sites, aliases, posts, media records, sessions, server settings, and the font list |
 | Media store | Files on disk | Stores uploaded images by content hash |
-| Page cache | Memory | Keeps rendered pages until the next write to the site |
-| Renderer | maud and pulldown-cmark | Builds HTML pages and crawler files |
+| Font library | Files on disk | Stores fonts for share images in `fonts/` |
+| Settings | Memory | Keeps the effective server settings: environment overrides first, then database values |
+| Page cache | Memory | Keeps rendered pages until the next write to the site, or until the next announcement boundary |
+| Renderer | maud, pulldown-cmark, and syntect | Builds HTML pages, highlighted code, and crawler files |
 | Share images | resvg | Draws PNG cards from an SVG layout |
-| IndexNow client | reqwest | Sends new post addresses to search engines |
+| IndexNow client | reqwest | Sends new post addresses to search engines, for sites that have IndexNow on |
 | Console | Preact app embedded in the binary | Serves the management interface |
 
 ## Routing
@@ -22,7 +24,7 @@ This page explains how a request becomes an answer.
 flowchart TD
   request[Request] --> api{Path starts with /api?}
   api -->|yes| routes[API routes on every domain]
-  api -->|no| console{Console domain?}
+  api -->|no| console{Console domain, or no console domain and not a site?}
   console -->|yes| app[Embedded console files]
   console -->|no| public[Public blog handler]
 ```
@@ -63,11 +65,19 @@ sequenceDiagram
   API->>DB: Save the post in one transaction
   API->>Cache: Empty the cache of this site
   API-->>Client: 200 PostSaved
-  API--)IndexNow: Background ping when published
+  API--)IndexNow: Background ping when published and IndexNow is on
 ```
 
 The cache keeps a generation number for each site.
 A write increases the number, so a page that was rendered before the write is not stored.
+
+## Settings
+
+The server reads the token, the console domain, and the scheme from the environment at startup.
+A value that the environment does not set comes from the `settings` table.
+After each change through the API, the server loads the settings again.
+The database stores only the SHA-256 digest of the token.
+Session hashes come from the token digest, so a new token ends every session.
 
 ## Validation
 

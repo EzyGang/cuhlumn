@@ -23,6 +23,18 @@ These API calls empty the cache of the site:
 A page that was being rendered during a write is not stored.
 Other sites keep their cache.
 
+These API calls empty the cache of every site:
+
+- A server settings update that changes the scheme, because pages contain absolute addresses
+- Font upload, Google Fonts import, or font deletion, because share images use the fonts
+
+## Announcement boundaries
+
+When a site has an announcement with a start or end time in the future, each cached HTML page expires at the next of these times.
+The next request after that time renders the page again, so the bar appears or disappears on time.
+Crawler files and share images do not contain the bar, so they do not expire.
+See [Announcements](announcements.md#caching).
+
 ## HTTP headers
 
 | Header | Value |

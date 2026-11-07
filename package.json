@@ -14,6 +14,7 @@
     "type-check": "pnpm --filter @cuhlumn/console type-check",
     "validate": "pnpm --filter @cuhlumn/console validate",
     "format": "pnpm --filter @cuhlumn/console format",
+    "format:check": "pnpm --filter @cuhlumn/console format:check",
     "fix": "pnpm --filter @cuhlumn/console fix",
     "test": "pnpm --filter @cuhlumn/console test"
   }

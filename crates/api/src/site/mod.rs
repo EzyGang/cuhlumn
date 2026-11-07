@@ -1,25 +1,24 @@
 //! Sites: one blog on its own domain.
 
 pub mod accent;
+pub mod announcement;
+pub mod brand;
 pub mod host;
 pub mod indexnow_key;
 pub mod lang;
 pub mod link;
+pub mod social;
 #[cfg(test)]
 mod tests;
-
-use std::{fmt, str::FromStr};
+pub mod theme;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     post::slug::Slug,
     site::{
-        accent::Accent,
-        host::Host,
-        indexnow_key::IndexNowKey,
-        lang::Lang,
-        link::{AbsoluteUrl, Link, LinkUrl},
+        announcement::Announcement, brand::Brand, host::Host, indexnow_key::IndexNowKey,
+        lang::Lang, link::AbsoluteUrl,
     },
     text,
 };
@@ -46,6 +45,10 @@ pub struct Site {
     pub home: Option<Slug>,
     pub indexnow_key: IndexNowKey,
     pub brand: Brand,
+    /// Sends IndexNow pings when a post is published.
+    pub indexnow: bool,
+    /// The announcement bar, shown while it is live.
+    pub announcement: Option<Announcement>,
     /// The time of the last change, in unix seconds.
     #[cfg_attr(feature = "ts", ts(type = "number"))]
     pub updated_at: i64,
@@ -86,52 +89,14 @@ pub struct SiteInput {
     pub indexnow_key: Option<IndexNowKey>,
     #[serde(default)]
     pub brand: Brand,
+    /// Sends IndexNow pings when a post is published.
+    #[serde(default = "indexnow_default")]
+    pub indexnow: bool,
+    #[serde(default)]
+    pub announcement: Option<Announcement>,
 }
-
-/// The look settings of a site, shown as "Appearance" in the console.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-#[serde(default, deny_unknown_fields)]
-pub struct Brand {
-    pub accent: Accent,
-    pub font: Font,
-    pub logo: Option<LinkUrl>,
-    pub favicon: Option<LinkUrl>,
-    /// The share image for pages that have no share image of their own.
-    pub og_image: Option<LinkUrl>,
-    /// Header links, at most 8.
-    #[serde(deserialize_with = "text::de_max_items::<_, Link, LINKS_MAX>")]
-    pub links: Vec<Link>,
-    /// Raw HTML for the page head, at most 20 000 bytes.
-    #[serde(deserialize_with = "text::de_max_bytes::<_, HEAD_MAX>")]
-    pub head: String,
-    /// Footer text, at most 500 characters.
-    #[serde(deserialize_with = "text::de_max_chars::<_, FOOTER_MAX>")]
-    pub footer: String,
-    /// Shows the "Published with Cuhlumn" credit in the footer.
-    pub credit: bool,
-}
-
-/// The font family of post text.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
-#[serde(rename_all = "lowercase")]
-#[cfg_attr(feature = "ts", ts(rename_all = "lowercase"))]
-pub enum Font {
-    #[default]
-    Serif,
-    Sans,
-}
-
-/// A text that is not a font name.
-#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
-#[error("the font {0:?} is not valid: use serif or sans")]
-pub struct FontError(String);
 
 const TITLE_MAX: usize = 200;
-const LINKS_MAX: usize = 8;
-const HEAD_MAX: usize = 20_000;
-const FOOTER_MAX: usize = 500;
 
 impl From<Site> for SiteInput {
     /// Returns the input that stores the same site again, with the same IndexNow key.
@@ -149,59 +114,12 @@ impl From<Site> for SiteInput {
             home: site.home,
             indexnow_key: Some(site.indexnow_key),
             brand: site.brand,
+            indexnow: site.indexnow,
+            announcement: site.announcement,
         }
     }
 }
 
-impl Default for Brand {
-    fn default() -> Self {
-        Self {
-            accent: Accent::default(),
-            font: Font::default(),
-            logo: None,
-            favicon: None,
-            og_image: None,
-            links: Vec::new(),
-            head: String::new(),
-            footer: String::new(),
-            credit: true,
-        }
-    }
-}
-
-impl Font {
-    /// Returns the name used in JSON and in the database.
-    #[must_use]
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Serif => "serif",
-            Self::Sans => "sans",
-        }
-    }
-}
-
-impl fmt::Display for Font {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
-impl FromStr for Font {
-    type Err = FontError;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        match value {
-            "serif" => Ok(Self::Serif),
-            "sans" => Ok(Self::Sans),
-            _ => Err(FontError(value.to_owned())),
-        }
-    }
-}
-
-impl TryFrom<String> for Font {
-    type Error = FontError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        value.parse()
-    }
+fn indexnow_default() -> bool {
+    true
 }

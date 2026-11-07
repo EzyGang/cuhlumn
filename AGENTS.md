@@ -285,6 +285,26 @@ Components:
 - Keep browser artifacts in `.playwright-cli/` at the repository root.
 - Do not commit build output, local databases, or secrets.
 
+## CI
+
+The `CI` workflow in `.github/workflows/ci.yml` runs these commands from the repository root.
+Run them before you push.
+
+```sh
+cargo fmt --all --check
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo test -p cuhlumn-api --features ts --test ts_export --locked   # then commit the changes in console/src/types/api
+cargo test --workspace --all-features --locked
+pnpm install --frozen-lockfile
+pnpm validate
+pnpm format:check
+pnpm test
+(cd docs && uv sync --locked --group dev && uv run zensical build)
+```
+
+The `Release` workflow in `.github/workflows/release.yml` publishes a version.
+Start it manually on `main` with a semver version without the `v` prefix.
+
 # Output
 
 Use ASD-STE100 Issue 9 as the writing guide.

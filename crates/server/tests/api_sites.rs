@@ -29,7 +29,7 @@ async fn health_needs_no_token() {
     assert_eq!(res.status, StatusCode::OK);
     assert_eq!(
         res.json(),
-        json!({"ok": true, "version": env!("CARGO_PKG_VERSION")})
+        json!({"ok": true, "version": env!("CARGO_PKG_VERSION"), "needs_setup": true})
     );
 }
 
@@ -38,14 +38,14 @@ async fn without_token_the_api_is_off_and_blogs_are_served() {
     let app = TestApp::without_token().await;
     app.api("GET", "/api/sites", None)
         .await
-        .assert_error(StatusCode::SERVICE_UNAVAILABLE, "api_disabled");
+        .assert_error(StatusCode::SERVICE_UNAVAILABLE, "needs_setup");
     let login = json_body(
         request("POST", common::CONSOLE, "/api/session"),
         Some(json!({"token": TOKEN})),
     );
     app.send(login)
         .await
-        .assert_error(StatusCode::SERVICE_UNAVAILABLE, "api_disabled");
+        .assert_error(StatusCode::SERVICE_UNAVAILABLE, "needs_setup");
     let blog = app
         .send(request("GET", HOST, "/").body(Body::empty()).unwrap())
         .await;

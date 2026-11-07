@@ -18,7 +18,7 @@ This includes malformed requests, unknown paths, and wrong methods.
 | --- | --- | --- |
 | `code` | String | A stable error code from the table below |
 | `message` | String | A message for people |
-| `field` | String or `null` | The JSON path of the invalid value; set only for `validation` errors |
+| `field` | String or `null` | The JSON path of the invalid value. It is set for `validation` errors and for some `conflict` and `locked` errors |
 
 ## Codes
 
@@ -30,10 +30,11 @@ This includes malformed requests, unknown paths, and wrong methods.
 | `forbidden` | `403` | A cookie request that changes data came from another origin |
 | `not_found` | `404` | The site, post, media file, or API path does not exist |
 | `method_not_allowed` | `405` | The path does not accept this method |
-| `conflict` | `409` | A domain belongs to another site, or the change would break the home page |
+| `conflict` | `409` | A domain belongs to another site or is the console domain, the change would break the home page, or the server has a token at setup |
+| `locked` | `409` | An environment variable sets this value |
 | `payload_too_large` | `413` | The body is larger than the limit |
 | `unsupported_media_type` | `415` | The body is not JSON on a JSON route, or the image type is not accepted |
-| `api_disabled` | `503` | The server has no `CUHLUMN_TOKEN` |
+| `needs_setup` | `503` | The server has no admin token yet |
 | `internal` | `500` | A server failure; the details go to the server log |
 
 The type `ErrorCode` also contains `console_unavailable`.
@@ -61,6 +62,16 @@ When `field` is set, `message` starts with the same path and a colon.
 | `PUT /api/sites/{host}` | An alias is the domain or an alias of another site |
 | `PUT /api/sites/{host}/posts/{slug}` | The post is the home page, and the new `kind` is not `page` |
 | `DELETE /api/sites/{host}/posts/{slug}` | The post is the home page |
+| `PUT /api/sites/{host}` | `{host}` or an alias is the console domain |
+| `PUT /api/settings` | The console domain is a blog domain or an alias, with `field` set to `console_host` |
+| `POST /api/setup` | The server has an admin token |
+
+## Locked values
+
+| Request | Cause |
+| --- | --- |
+| `PUT /api/settings` | `CUHLUMN_CONSOLE_HOST` or `CUHLUMN_SCHEME` sets a field to a different value, with `field` set to that field |
+| `PUT /api/settings/token` | `CUHLUMN_TOKEN` is set |
 
 ## Internal errors
 

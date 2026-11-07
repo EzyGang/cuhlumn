@@ -1,13 +1,17 @@
-//! Markdown to HTML with heading anchors, a table of contents, lazy images, and tables that read on a phone.
+//! Markdown to HTML with heading anchors, a table of contents, lazy images, highlighted code, and tables that read on a phone.
 
 mod headings;
+mod highlight;
 mod tables;
 
 use cuhlumn_api::wire::TocEntry;
 use maud::html;
-use pulldown_cmark::{CowStr, Event, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd};
 
-use crate::render::markdown::headings::{Headings, OpenHeading};
+use crate::render::markdown::{
+    headings::{Headings, OpenHeading},
+    highlight::OpenCode,
+};
 
 /// Rendered Markdown.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -73,6 +77,7 @@ struct Builder<'a> {
     headings: Headings,
     heading: Option<OpenHeading<'a>>,
     image: Option<OpenImage<'a>>,
+    code: Option<OpenCode>,
 }
 
 /// An image whose alternative text is still being read.
@@ -106,6 +111,24 @@ impl<'a> Builder<'a> {
                 Event::Text(text) | Event::Code(text) => image.alt.push_str(text),
                 _ => (),
             }
+            return;
+        }
+        if let Some(code) = self.code.as_mut() {
+            match event {
+                Event::Text(text) => code.push(&text),
+                Event::End(TagEnd::CodeBlock) => {
+                    let html = code.html();
+                    self.code = None;
+                    self.emit(Event::Html(html.into()));
+                }
+                _ => (),
+            }
+            return;
+        }
+        if let Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(info))) = &event
+            && let Some(code) = OpenCode::start(info)
+        {
+            self.code = Some(code);
             return;
         }
         match event {

@@ -32,7 +32,7 @@ pub async fn list(
     State(state): State<AppState>,
     SitePath(host): SitePath,
 ) -> Result<Json<Vec<Post>>, ApiError> {
-    let scheme = state.config().scheme;
+    let scheme = state.settings().scheme();
     let posts = state
         .db()
         .call(move |db| {
@@ -53,7 +53,7 @@ pub async fn get(
     State(state): State<AppState>,
     PostPath(host, slug): PostPath,
 ) -> Result<Json<Post>, ApiError> {
-    let scheme = state.config().scheme;
+    let scheme = state.settings().scheme();
     let post = state
         .db()
         .call(move |db| {
@@ -75,7 +75,7 @@ pub async fn put(
     PostPath(host, slug): PostPath,
     Json(input): Json<PostInput>,
 ) -> Result<Json<PostSaved>, ApiError> {
-    let scheme = state.config().scheme;
+    let scheme = state.settings().scheme();
     let (site, post) = state
         .db()
         .call(move |db| {
@@ -93,7 +93,7 @@ pub async fn put(
     if post.status == Status::Published {
         let urls = vec![
             post.url.clone(),
-            format!("{}/", state.config().origin(&site.host)),
+            format!("{}/", state.settings().origin(&site.host)),
         ];
         let _ping = state.indexnow().ping(scheme, &site, urls);
     }

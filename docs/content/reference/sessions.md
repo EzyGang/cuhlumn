@@ -1,8 +1,13 @@
 # Sessions
 
 The session routes support the management console.
-They answer only on the console domain.
-On other domains, and when `CUHLUMN_CONSOLE_HOST` is not set, they return `404`.
+They answer only on a domain that serves the console.
+
+- With a console domain, only that domain serves the console.
+- Without a console domain, every domain that is not a site domain or an alias serves the console.
+
+On other domains, the session routes return `404`.
+Before the first setup, they return `503` with the code `needs_setup`.
 
 ## Routes
 
@@ -30,5 +35,22 @@ On other domains, and when `CUHLUMN_CONSOLE_HOST` is not set, they return `404`.
 - `POST` with an `Origin` header for another domain returns `403`.
 - `GET` reads only the cookie. It does not extend the session.
 - `DELETE` with a cookie requires an `Origin` header for the console domain.
+- A session lasts 7 days.
+
+## Sessions from settings routes
+
+Two other routes also start a session and return `Session`:
+
+| Route | Effect |
+| --- | --- |
+| `POST /api/setup` | Stores the first admin token and starts a session |
+| `PUT /api/settings/token` | Deletes every session, stores the new token, and starts a new session |
+
+On a console domain, both routes also set the session cookie.
+On other domains, they return `Session` without a cookie.
+See [Server settings](settings.md).
+
+The server derives each session hash from the token digest.
+A new token from `CUHLUMN_TOKEN` therefore also ends every session after a restart.
 
 See [Security](../operations/security.md#console-sessions) for the cookie attributes.
