@@ -174,7 +174,7 @@ curl http://127.0.0.1:8080/api/health
 The answer has this form:
 
 ```json
-{"ok": true, "version": "0.14.0", "needs_setup": false}
+{"ok": true, "version": "0.15.0", "needs_setup": false}
 ```
 
 See [Configuration](../operations/configuration.md) for all settings.
