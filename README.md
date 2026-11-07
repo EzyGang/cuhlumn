@@ -27,7 +27,7 @@ Every page is rendered on the server with structured data, feeds, and machine-re
 Publishing does not need a browser.
 Posts arrive through an HTTP API, the `cuhlumn` command-line client, or the management console.
 
-**Documentation**: [`docs/`](docs/content/index.md)
+**Documentation**: https://cuhlumn.ezygang.digital
 
 **Source Code**: https://github.com/EzyGang/cuhlumn
 
@@ -114,8 +114,8 @@ On the first launch without `CUHLUMN_TOKEN`, open the console and set the admin 
 
 Point every blog domain and the console domain at the server.
 Put a TLS proxy in front of the server that keeps the `Host` header.
-[Cloudflare](docs/content/operations/cloudflare.md) is the recommended proxy because it also caches the pages.
-[Read the installation guide](docs/content/getting-started/installation.md).
+[Cloudflare](https://cuhlumn.ezygang.digital/operations/cloudflare/) is the recommended proxy because it also caches the pages.
+[Read the installation guide](https://cuhlumn.ezygang.digital/getting-started/installation/).
 
 ### Server from source
 
@@ -196,7 +196,7 @@ cuhlumn post publish sqlite-backups
 
 The post is now at `https://blog.example.com/sqlite-backups/`.
 
-[Read the full quick-start guide](docs/content/getting-started/quickstart.md).
+[Read the full quick-start guide](https://cuhlumn.ezygang.digital/getting-started/quickstart/).
 
 ---
 
@@ -213,7 +213,7 @@ Raw HTML passes through, so give the admin token only to trusted writers.
 
 A blog can show one of its pages as the home page, with the latest posts below it.
 
-[Read about posts and drafts](docs/content/platform/posts.md).
+[Read about posts and drafts](https://cuhlumn.ezygang.digital/platform/posts/).
 
 ### Search and AI Discovery
 
@@ -226,7 +226,7 @@ A blog can show one of its pages as the home page, with the latest posts below i
 | IndexNow | A notification for each published post, when the blog has IndexNow on |
 | Profile links | Social links in the JSON-LD `sameAs` list of the publisher |
 
-[Read about discovery](docs/content/platform/discovery.md).
+[Read about discovery](https://cuhlumn.ezygang.digital/platform/discovery/).
 
 ### Appearance
 
@@ -240,9 +240,9 @@ Each blog can show an announcement bar with a start time, an end time, and a lin
 Share images use Inter first, then the system fonts and the font library.
 Upload font files or import them from Google Fonts to add characters for other scripts.
 
-[Read about appearance](docs/content/platform/appearance.md).
-[Read about announcements](docs/content/platform/announcements.md).
-[Read about share images](docs/content/platform/share-images.md).
+[Read about appearance](https://cuhlumn.ezygang.digital/platform/appearance/).
+[Read about announcements](https://cuhlumn.ezygang.digital/platform/announcements/).
+[Read about share images](https://cuhlumn.ezygang.digital/platform/share-images/).
 
 ### Performance
 
@@ -250,7 +250,7 @@ The server renders a page once and keeps it in memory with an ETag and a gzip co
 A change to a blog clears only the cache of that blog.
 A post page transfers about 5 KiB.
 
-[Read about caching](docs/content/platform/caching.md).
+[Read about caching](https://cuhlumn.ezygang.digital/platform/caching/).
 
 ---
 
@@ -271,7 +271,7 @@ The three override variables win over the console values, and the console then s
 
 IndexNow is a setting of each site, and fonts for share images are uploaded in the console.
 
-[Read the configuration guide](docs/content/operations/configuration.md).
+[Read the configuration guide](https://cuhlumn.ezygang.digital/operations/configuration/).
 
 ---
 
@@ -290,7 +290,7 @@ IndexNow is a setting of each site, and fonts for share images are uploaded in t
 | `cuhlumn announce clear` | Remove the announcement bar |
 | `cuhlumn install-skill` | Install the agent skill |
 
-[Read the complete CLI reference](docs/content/cli/index.md).
+[Read the complete CLI reference](https://cuhlumn.ezygang.digital/cli/).
 
 ---
 
@@ -317,7 +317,7 @@ Errors are JSON objects with a `code`, a `message`, and the invalid `field`.
 | `DELETE /api/sites/{host}/media/{name}` | Delete an image |
 | `POST /api/sites/{host}/preview` | Render Markdown without saving |
 
-[Read the API reference](docs/content/reference/api.md).
+[Read the API reference](https://cuhlumn.ezygang.digital/reference/api/).
 
 ---
 

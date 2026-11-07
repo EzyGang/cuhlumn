@@ -97,6 +97,10 @@ uv run zensical serve    # local preview
 uv run zensical build    # static site in docs/site
 ```
 
+The `Docs` workflow in `.github/workflows/docs.yml` publishes the site to GitHub Pages at https://cuhlumn.ezygang.digital.
+It runs after each push to `main` that changes `docs/`.
+You can also start it by hand from the Actions tab.
+
 ## Release
 
 The `Release` workflow in `.github/workflows/release.yml` publishes a version.
