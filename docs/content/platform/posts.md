@@ -32,6 +32,21 @@ The server sets `published_at` when an entry is published for the first time.
 `updated_at` changes on every save.
 The post page shows "updated" when `updated_at` is more than one day after `published_at`.
 
+## Call to action
+
+A site with a `project_url` can show a call to action after each post and page.
+The call to action contains the site `cta` text and a button that opens the project.
+The site `show_cta` sets the default for all entries. The default is `true`.
+The entry `show_cta` overrides the default for one entry:
+
+| Entry `show_cta` | Result |
+| --- | --- |
+| `null` | The entry follows the site `show_cta` |
+| `true` | The entry always shows the call to action |
+| `false` | The entry never shows the call to action |
+
+A site without a `project_url` shows no call to action.
+
 ## Slugs
 
 The slug comes from the address of the `PUT` request.

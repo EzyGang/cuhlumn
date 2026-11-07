@@ -20,7 +20,11 @@ title: string, description: string,
 /**
  * Other domains of the site, without repetitions.
  */
-aliases: Array<Host>, author: string, author_url: AbsoluteUrl | null, project_name: string, project_url: AbsoluteUrl | null, cta: string, lang: Lang, 
+aliases: Array<Host>, author: string, author_url: AbsoluteUrl | null, project_name: string, project_url: AbsoluteUrl | null, cta: string, 
+/**
+ * Shows the call to action on posts and pages that do not choose for themselves.
+ */
+show_cta: boolean, lang: Lang, 
 /**
  * Must name an existing page of the site.
  */

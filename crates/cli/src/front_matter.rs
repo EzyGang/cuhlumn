@@ -103,6 +103,9 @@ pub fn to_markdown(post: &Post) -> String {
     if let Some(og_image) = &post.og_image {
         field(&mut document, "og_image", &quoted(og_image.as_str()));
     }
+    if let Some(show_cta) = post.show_cta {
+        field(&mut document, "show_cta", &show_cta.to_string());
+    }
     if let Some(published_at) = post.published_at {
         field(&mut document, "published_at", &published_at.to_string());
     }
@@ -259,6 +262,7 @@ mod tests {
             "status": "published",
             "cover": "/media/ba7816bf8f01cfea414140de5dae2223.png",
             "og_image": null,
+            "show_cta": false,
             "published_at": 1_777_593_600,
             "updated_at": 1_777_600_000,
             "url": "https://blog.example.com/sqlite-backups/"
@@ -269,6 +273,17 @@ mod tests {
         let mut expected = cuhlumn_api::post::PostInput::from(post);
         expected.body.push('\n');
         assert_eq!(file.input, expected);
+    }
+
+    #[test]
+    fn show_cta_is_optional() {
+        let file = PostFile::parse(POST).unwrap();
+        assert_eq!(file.input.show_cta, None);
+        let text = "---\ntitle: Hi\nshow_cta: false\n---\nText.";
+        assert_eq!(PostFile::parse(text).unwrap().input.show_cta, Some(false));
+        let text = "---\ntitle: Hi\nshow_cta: maybe\n---\nText.";
+        let message = PostFile::parse(text).unwrap_err().to_string();
+        assert!(message.contains("show_cta"), "{message}");
     }
 
     #[test]

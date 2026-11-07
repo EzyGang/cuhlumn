@@ -33,7 +33,7 @@ export const usePostEditor = (): PostEditorContextValue => {
   const slug = params.slug ?? null;
   const form = useSignal<PostForm>(emptyPostForm());
   const errors = useSignal<FieldErrors>({});
-  const state = usePostFormState(form, errors, slug === null);
+  const state = usePostFormState(params.host, form, errors, slug === null);
   const persistence = usePostPersistence(params.host, slug, form, errors);
   const preview = usePreview(params.host, form);
   const saved = persistence.saved;
@@ -46,6 +46,7 @@ export const usePostEditor = (): PostEditorContextValue => {
       tags: state.tags,
       tagError: state.tagError,
       kinds: KINDS,
+      ctaChoices: state.ctaChoices,
       savedStatus: saved?.status ?? null,
       statusTone: statusTone(saved?.status ?? "draft"),
       publicUrl: saved?.status === "published" ? saved.url : null,

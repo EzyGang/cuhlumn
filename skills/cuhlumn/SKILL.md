@@ -77,6 +77,7 @@ Without `status: published`, the post is saved as a draft that readers cannot se
 | `status` | `draft` | `draft` or `published` |
 | `cover` | None | Image address, such as `/media/<name>.png` |
 | `og_image` | None | Share image that replaces the generated card |
+| `show_cta` | Site default | `true` or `false` shows or hides the call to action after this post. Without it, the post follows the site |
 | `published_at` | First publication | Unix seconds, `2026-05-01`, or `2026-05-01T09:30:00Z`; use it only to import old posts |
 
 Other fields are errors.
@@ -163,8 +164,9 @@ Use `site set` for changes to an existing site.
 | `description` | Home page text and meta description |
 | `aliases` | Other domains that redirect to the site |
 | `author`, `author_url` | Author name and absolute address |
-| `project_name`, `project_url` | The product link in the header and after each post |
-| `cta` | Call-to-action text after each post |
+| `project_name`, `project_url` | The product link in the header and the call to action after posts |
+| `cta` | Call-to-action text above the product button |
+| `show_cta` | `true` shows the call to action on posts that do not set `show_cta`. Default `true` |
 | `lang` | Language code, such as `en` or `pt-BR` |
 | `home` | Slug of a page to show at `/`. The page must exist first |
 | `indexnow` | `true` sends IndexNow pings when a post is published. Default `true` |

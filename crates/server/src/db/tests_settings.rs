@@ -1,12 +1,13 @@
 use cuhlumn_api::{
     fonts::{FontItem, FontSource},
+    post::slug::Slug,
     settings::Scheme,
     site::{SiteInput, brand::Brand, host::Host, indexnow_key::IndexNowKey, theme::Palette},
 };
 use rusqlite::Connection;
 use serde_json::json;
 
-use crate::db::{Database, fonts, migrations, sessions, settings, sites};
+use crate::db::{Database, fonts, migrations, posts, sessions, settings, sites};
 
 fn open() -> (tempfile::TempDir, Connection) {
     let dir = tempfile::tempdir().unwrap();
@@ -95,6 +96,35 @@ fn migration_two_fills_defaults_for_existing_sites() {
     let stored = settings::get(&db).unwrap();
     assert_eq!(stored.token_digest, None);
     assert_eq!(stored.scheme, None);
+}
+
+#[test]
+fn migration_three_keeps_the_call_to_action() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut db = Connection::open(dir.path().join("old.db")).unwrap();
+    db.execute_batch(migrations::MIGRATIONS[0]).unwrap();
+    db.execute_batch(migrations::MIGRATIONS[1]).unwrap();
+    db.pragma_update(None, "user_version", 2).unwrap();
+    db.execute_batch(
+        "INSERT INTO sites (host, title, description, author, project_name, project_url, cta,
+           lang, indexnow_key, accent, font, links, head, footer, credit, updated_at)
+         VALUES ('harbor.example.com', 'Harbor Notes', '', 'Mara Lind', 'Harbor',
+           'https://harbor.example.com', 'Harbor runs your app on a server that you own.', 'en',
+           '0123456789abcdef0123456789abcdef', '#0e7490', 'serif', '[]', '', '', 1, 1);
+         INSERT INTO posts (host, slug, title, description, body, tags, kind, status,
+           published_at, updated_at)
+         VALUES ('harbor.example.com', 'sqlite-backups', 'How we back up SQLite', '', 'Text.',
+           '[]', 'post', 'published', 1, 1);",
+    )
+    .unwrap();
+    migrations::apply(&mut db).unwrap();
+    let site = sites::get(&db, &harbor()).unwrap().unwrap();
+    assert!(site.show_cta);
+    let slug = Slug::new("sqlite-backups").unwrap();
+    let post = posts::get(&db, Scheme::Https, &harbor(), &slug)
+        .unwrap()
+        .unwrap();
+    assert_eq!(post.show_cta, None);
 }
 
 #[test]

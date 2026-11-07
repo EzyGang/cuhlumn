@@ -3,9 +3,13 @@ import type { TocEntry } from "./api/TocEntry";
 
 export type PostTextKey = "slug" | "title" | "description" | "body" | "cover" | "og_image";
 
+/** The call to action choice of a post: follow the site default, always show, or never show. */
+export type CtaChoice = "site" | "show" | "hide";
+
 export interface PostForm extends Record<PostTextKey, string> {
   tags: string[];
   kind: Kind;
+  show_cta: CtaChoice;
 }
 
 export type PreviewState =

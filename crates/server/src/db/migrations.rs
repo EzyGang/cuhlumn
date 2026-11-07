@@ -112,4 +112,8 @@ CREATE TABLE fonts (
   created_at INTEGER NOT NULL
 ) STRICT;
 ",
+    r"
+ALTER TABLE sites ADD COLUMN show_cta INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE posts ADD COLUMN show_cta INTEGER;
+",
 ];

@@ -95,6 +95,18 @@ fn indexnow_defaults_on_and_announcement_off() {
 }
 
 #[test]
+fn show_cta_defaults_on() {
+    let input = parse(json!({"title": "Harbor Notes"})).unwrap();
+    assert!(input.show_cta);
+    let input = parse(json!({"title": "Harbor Notes", "show_cta": false})).unwrap();
+    assert!(!input.show_cta);
+    assert_eq!(
+        serde_json::to_value(&input).unwrap()["show_cta"],
+        json!(false)
+    );
+}
+
+#[test]
 fn social_links_are_limited_and_unique() {
     let link = json!({"network": "github", "url": "https://github.com/maralind"});
     assert!(parse(json!({"title": "x", "brand": {"social": [link]}})).is_ok());

@@ -18,6 +18,11 @@ body: string, tags: Tags, kind: Kind, status: Status, cover: LinkUrl | null,
  */
 og_image: LinkUrl | null, 
 /**
+ * Shows the call to action after this post.
+ * `None` follows the site default.
+ */
+show_cta: boolean | null, 
+/**
  * The first publication time, in unix seconds.
  */
 published_at: number | null, 

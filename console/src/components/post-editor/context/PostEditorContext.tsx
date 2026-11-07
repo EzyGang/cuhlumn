@@ -6,7 +6,7 @@ import type { Kind } from "../../../types/api/Kind";
 import type { Status } from "../../../types/api/Status";
 import type { ChipInputModel } from "../../../types/chips";
 import type { LoadState } from "../../../types/load";
-import type { PostForm, PostTextKey, PreviewModel } from "../../../types/postEditor";
+import type { CtaChoice, PostForm, PostTextKey, PreviewModel } from "../../../types/postEditor";
 import type { SelectItem } from "../../../types/select";
 import type { FieldErrors } from "../../../utils/fieldErrors";
 
@@ -18,6 +18,7 @@ export interface PostEditorContextValue {
     tags: ChipInputModel;
     tagError: string | undefined;
     kinds: readonly SelectItem<Kind>[];
+    ctaChoices: readonly SelectItem<CtaChoice>[];
     savedStatus: Status | null;
     statusTone: BadgeTone;
     publicUrl: string | null;
@@ -29,6 +30,7 @@ export interface PostEditorContextValue {
   actions: {
     text: Record<PostTextKey, (value: string) => void>;
     setKind: (kind: Kind) => void;
+    setShowCta: (choice: CtaChoice) => void;
     primary: () => void;
     secondary: () => void;
     remove: () => void;

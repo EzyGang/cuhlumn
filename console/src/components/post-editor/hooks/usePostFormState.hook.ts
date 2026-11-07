@@ -1,17 +1,23 @@
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import { useChipInput } from "../../../hooks/useChipInput.hook";
+import { useSites } from "../../../hooks/useSites.hook";
 import type { Kind } from "../../../types/api/Kind";
-import type { PostForm, PostTextKey } from "../../../types/postEditor";
+import type { CtaChoice, PostForm, PostTextKey } from "../../../types/postEditor";
+import type { SelectItem } from "../../../types/select";
 import { TAG_RULES } from "../../../utils/chips";
 import { bindKeys } from "../../../utils/bindKeys";
 import { firstItemError, withoutFieldError } from "../../../utils/fieldErrors";
 import type { FieldErrors } from "../../../utils/fieldErrors";
+import { ctaItems } from "../../../utils/postForm";
 import { suggestSlug } from "../../../utils/slug";
 import type { PostEditorContextValue } from "../context/PostEditorContext";
 
-export type PostFormState = Pick<PostEditorContextValue["data"], "tags" | "tagError"> & {
-  actions: Pick<PostEditorContextValue["actions"], "text" | "setKind">;
+export type PostFormState = Pick<
+  PostEditorContextValue["data"],
+  "tags" | "tagError" | "ctaChoices"
+> & {
+  actions: Pick<PostEditorContextValue["actions"], "text" | "setKind" | "setShowCta">;
 };
 
 const TEXT_KEYS: readonly PostTextKey[] = [
@@ -29,13 +35,20 @@ const useTagInput = (
   form: Signal<PostForm>,
   errors: Signal<FieldErrors>,
   update: Update,
-): Omit<PostFormState, "actions"> => {
+): Pick<PostFormState, "tags" | "tagError"> => {
   const [tagIndex, tagError] = firstItemError(errors.value, "tags");
   const setTags = (values: string[]): void => update({ tags: values }, "tags");
   return { tags: useChipInput(form.value.tags, setTags, TAG_RULES, tagIndex), tagError };
 };
 
+/** Returns the call to action choices, with the default of the site in the first label. */
+const useCtaChoices = (host: string): readonly SelectItem<CtaChoice>[] => {
+  const site = useSites().sites?.find((item) => item.host === host);
+  return ctaItems(site?.show_cta ?? null);
+};
+
 export const usePostFormState = (
+  host: string,
   form: Signal<PostForm>,
   errors: Signal<FieldErrors>,
   creating: boolean,
@@ -52,9 +65,11 @@ export const usePostFormState = (
   };
   return {
     ...useTagInput(form, errors, update),
+    ctaChoices: useCtaChoices(host),
     actions: {
       text: bindKeys(TEXT_KEYS, setText),
       setKind: (kind: Kind): void => update({ kind }, "kind"),
+      setShowCta: (show_cta: CtaChoice): void => update({ show_cta }, "show_cta"),
     },
   };
 };

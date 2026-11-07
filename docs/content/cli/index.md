@@ -88,6 +88,7 @@ We back up **one SQLite file** every night.
 | `status` | `draft` | `draft` or `published` |
 | `cover` | None | The cover image address |
 | `og_image` | None | The share image address |
+| `show_cta` | Site default | `true` or `false`. Without it, the post follows the site `show_cta` |
 | `published_at` | First publication | Unix seconds, `2026-05-01`, or an RFC 3339 time |
 
 The client checks the file before it sends it.
