@@ -1,6 +1,7 @@
 [project]
 site_name = "Cuhlumn Documentation"
 site_description = "Installation, platform, management console, configuration, and HTTP API documentation for Cuhlumn."
+site_url = "https://cuhlumn.ezygang.digital/"
 docs_dir = "content"
 site_dir = "site"
 
