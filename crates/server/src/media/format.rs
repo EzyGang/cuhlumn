@@ -81,8 +81,9 @@ fn is_avif(bytes: &[u8]) -> bool {
         .map_or(0, u32::from_be_bytes);
     let end = usize::try_from(declared).map_or(bytes.len(), |size| size.min(bytes.len()));
     let brands = bytes.get(8..end).unwrap_or_default();
+    let (brands, _) = brands.as_chunks::<4>();
     brands
-        .chunks_exact(4)
+        .iter()
         .enumerate()
         .filter(|(index, _)| *index != 1)
         .any(|(_, brand)| brand == b"avif" || brand == b"avis")
