@@ -19,8 +19,8 @@ openssl rand -hex 32    # paste the result into CUHLUMN_TOKEN in .env
 docker compose up -d
 ```
 
-The server port is published only on `127.0.0.1:8080` of the host.
-Put a TLS proxy or a Cloudflare tunnel in front of it.
+Compose publishes the server ports only on `127.0.0.1` of the host.
+Put your own reverse proxy, such as nginx or Caddy, in front of the public port to serve the blogs on the internet.
 
 | `.env` variable | Meaning |
 | --- | --- |
@@ -30,13 +30,8 @@ Put a TLS proxy or a Cloudflare tunnel in front of it.
 | `CUHLUMN_CONSOLE_HOST` | Optional console domain |
 | `CUHLUMN_SCHEME` | Optional scheme, `https` by default |
 | `CUHLUMN_ADMIN_ADDR` | Optional admin listener in the container, see [Private admin port](#private-admin-port) |
-| `CUHLUMN_ADMIN_PUBLISH` | The host address of the admin port, `127.0.0.1:8081` by default |
+| `CUHLUMN_ADMIN_PORT` | The host port of the admin port on `127.0.0.1`, `8081` by default |
 | `RUST_LOG` | The log filter |
-| `CLOUDFLARE_TUNNEL_TOKEN` | The tunnel token, for the `tunnel` profile only |
-
-The `tunnel` profile also starts `cloudflared`.
-Start it with `docker compose --profile tunnel up -d`.
-See [Cloudflare](../operations/cloudflare.md#cloudflare-tunnel-with-compose).
 
 To use a fixed version, set `CUHLUMN_IMAGE=ghcr.io/ezygang/cuhlumn:1.0.0` in `.env`.
 The release workflow also publishes the tags `latest`, `MAJOR`, and `MAJOR.MINOR`.
@@ -144,19 +139,29 @@ The admin port works with HTTPS and without HTTPS:
 
 The example below uses NetBird, which encrypts the traffic, so it uses plain HTTP.
 
-Set these variables in `.env`, with the NetBird address of the server:
+1. Set `CUHLUMN_ADMIN_ADDR=0.0.0.0:8081` in `.env`.
+2. Start the server with `docker compose up -d`. The admin port is now on `127.0.0.1:8081` of the host.
+3. Make your reverse proxy listen on the NetBird address of the server and forward to `127.0.0.1:8081`.
+4. On a computer in the NetBird network, open the proxy address, for example `http://100.92.3.4:8081/`.
+5. Complete the setup, or log in with the admin token.
+6. For the CLI, set `CUHLUMN_SERVER` to the same address.
 
-```sh
-CUHLUMN_ADMIN_ADDR=0.0.0.0:8081
-CUHLUMN_ADMIN_PUBLISH=100.92.3.4:8081
+The proxy must keep the `Host` header of the request.
+The server compares it with the `Origin` header of console requests.
+Caddy keeps the header by default.
+For nginx, add `proxy_set_header Host $http_host;`:
+
+```nginx
+server {
+    listen 100.92.3.4:8081;
+    location / {
+        proxy_pass http://127.0.0.1:8081;
+        proxy_set_header Host $http_host;
+    }
+}
 ```
 
-1. Start the server with `docker compose up -d`.
-2. On a computer in the NetBird network, open `http://100.92.3.4:8081/`.
-3. Complete the setup, or log in with the admin token.
-4. For the CLI, set `CUHLUMN_SERVER=http://100.92.3.4:8081`.
-
-Send the Cloudflare tunnel and the public TLS proxy only to the public port 8080.
+Send the public proxy only to the public port 8080.
 The console domain setting has no effect when the admin port is on.
 See [Admin listener](../operations/configuration.md#admin-listener).
 

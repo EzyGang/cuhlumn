@@ -104,7 +104,6 @@ docker compose up -d
 
 Compose starts the image `ghcr.io/ezygang/cuhlumn` and publishes the port on `127.0.0.1:8080`.
 The image checks itself with `cuhlumn-server healthcheck`.
-Add `--profile tunnel` and set `CLOUDFLARE_TUNNEL_TOKEN` to start a Cloudflare tunnel next to the server.
 
 On the first launch without `CUHLUMN_TOKEN`, open the console and set the admin token on the **Setup** page.
 

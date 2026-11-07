@@ -84,8 +84,8 @@ The Compose file publishes the port only on `127.0.0.1`.
 With `CUHLUMN_ADMIN_ADDR`, the console and the admin API are only on the admin port.
 The public port serves the blogs and `GET /api/health`, and returns `404` for every other `/api` path.
 A leaked token is then useless to a person who reaches only the public port.
-Publish the admin port only on a private network, for example a NetBird address.
-Never send a Cloudflare tunnel or a public proxy to the admin port.
+Publish the admin port only on a private network, for example through a reverse proxy on a NetBird address.
+Never send a public proxy to the admin port.
 
 The admin port works with HTTPS and without HTTPS:
 
