@@ -74,7 +74,7 @@ The API cannot clear a stored publication time.
 ## Side effects
 
 - Each `PUT` and `DELETE` empties the page cache of the site.
-- A `PUT` with `status` `published` sends an IndexNow notification, unless `CUHLUMN_INDEXNOW=off`.
+- A `PUT` with `status` `published` sends an IndexNow notification when the site has `indexnow` set to `true`. See [IndexNow](../platform/discovery.md#indexnow).
 
 ## Example
 

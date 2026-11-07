@@ -23,6 +23,11 @@ The flags `--server`, `--token`, and `--site` override the variables.
 `cuhlumn health` checks the connection without a token.
 Never print the token or write it into a file in a repository.
 
+A new server without a token is in setup mode.
+The admin sets the token on the **Setup** page of the console, or sets `CUHLUMN_TOKEN` on the server.
+Until then, admin commands fail with `error: needs_setup: ...`.
+Use the token that the admin set.
+
 ## Output and errors
 
 - Every command prints JSON on stdout, except `post get --markdown`, `skill`, and `install-skill`.
@@ -63,9 +68,9 @@ Without `status: published`, the post is saved as a draft that readers cannot se
 | Field | Default | Rule |
 | --- | --- | --- |
 | `title` | Required | At most 300 characters |
-| `slug` | File name | Lowercase letters, digits, and single hyphens, at most 100 bytes; not `api`, `og`, `media`, or `tags` |
+| `slug` | File name | Lowercase letters, digits, and single hyphens, at most 100 bytes. Not `api`, `og`, `media`, or `tags` |
 | `description` | Empty | One or two sentences for search results and share cards |
-| `tags` | None | At most 20; repeated tags are removed without regard to case |
+| `tags` | None | At most 20. Repeated tags are removed without regard to case |
 | `kind` | `post` | `post` for dated articles, `page` for pages such as About |
 | `status` | `draft` | `draft` or `published` |
 | `cover` | None | Image address, such as `/media/<name>.png` |
@@ -99,7 +104,7 @@ Add `status: published` to the file, or pass `--draft` when you want to hide the
 
 | Command | Result |
 | --- | --- |
-| `cuhlumn post list` | All posts and pages without bodies; filter with `--status draft` or `--kind page` |
+| `cuhlumn post list` | All posts and pages without bodies. Filter with `--status draft` or `--kind page` |
 | `cuhlumn post get <slug>` | One post as JSON |
 | `cuhlumn post publish <slug>` | Makes the post visible |
 | `cuhlumn post unpublish <slug>` | Hides the post and keeps it as a draft |
@@ -159,8 +164,10 @@ Use `site set` for changes to an existing site.
 | `project_name`, `project_url` | The product link in the header and after each post |
 | `cta` | Call-to-action text after each post |
 | `lang` | Language code, such as `en` or `pt-BR` |
-| `home` | Slug of a page to show at `/`; the page must exist first |
-| `indexnow_key` | IndexNow key; the server makes one for a new site |
+| `home` | Slug of a page to show at `/`. The page must exist first |
+| `indexnow` | `true` sends IndexNow pings when a post is published. Default `true` |
+| `indexnow_key` | IndexNow key. The server makes one for a new site |
+| `announcement` | The announcement bar. Change it with `cuhlumn announce` |
 
 ### Appearance (`brand`)
 
@@ -169,12 +176,26 @@ Use `site set` for changes to an existing site.
 | `brand.accent` | `#2563eb` | Accent color, `#rgb` or `#rrggbb`; link colors stay readable automatically |
 | `brand.font` | `serif` | `serif` or `sans` for post text |
 | `brand.logo` | None | Header and share card image |
-| `brand.favicon` | None | Browser icon; without it the logo or a generated icon is used |
+| `brand.favicon` | None | Browser icon. Without it, the logo or a generated icon is used |
 | `brand.og_image` | None | Share image for the home page |
 | `brand.links` | None | Up to 8 header links: `[{"label": "Status", "url": "https://status.harbor.example.com"}]` |
 | `brand.head` | Empty | Raw HTML for every page head, such as analytics |
 | `brand.footer` | Empty | Footer text, at most 500 characters |
 | `brand.credit` | `true` | Shows "Published with Cuhlumn" |
+| `brand.palette` | `paper` | `paper`, `slate`, `sepia`, `mono`, or `contrast` |
+| `brand.theme` | `system` | `system`, `light`, or `dark` |
+| `brand.theme_toggle` | `true` | Shows the light and dark toggle button |
+| `brand.width` | `normal` | `narrow`, `normal`, or `wide` text column |
+| `brand.home_layout` | `list` | `list`, `compact`, or `cards` |
+| `brand.code_theme` | `github` | `github`, `solarized`, `ocean`, or `none` (no highlighting) |
+| `brand.card_style` | `dark` | Share card colours: `dark`, `light`, or `accent` |
+| `brand.card_meta` | `true` | Shows the date and reading time on share cards |
+| `brand.social` | None | Up to 12 profile links, without repetitions: `[{"network": "github", "url": "https://github.com/maralind"}]` |
+| `brand.social_in_header` | `false` | Also shows the social links in the header, not only in the footer |
+
+Social networks: `github`, `gitlab`, `codeberg`, `mastodon`, `bluesky`, `x`, `threads`, `linkedin`, `youtube`, `instagram`, `discord`, `telegram`, and `email`.
+Each `url` is an absolute `https://` address, at most 500 characters.
+For `email`, the `url` is `mailto:` with one address, such as `mailto:mara@harbor.example.com`.
 
 Examples:
 
@@ -183,11 +204,50 @@ cuhlumn site set brand.accent=#0f766e brand.font=sans
 cuhlumn site set brand.logo=/media/<name>.png
 cuhlumn site set brand.credit:=false brand.favicon:=null
 cuhlumn site set 'brand.links:=[{"label": "Docs", "url": "/docs/"}]'
+cuhlumn site set indexnow:=false
+cuhlumn site set brand.palette=sepia brand.home_layout=cards
+cuhlumn site set brand.code_theme=ocean brand.card_style=light
+cuhlumn site set 'brand.social:=[{"network": "github", "url": "https://github.com/maralind"}, {"network": "email", "url": "mailto:mara@harbor.example.com"}]'
 ```
 
 `field=text` sets a string.
 `field:=json` sets a number, a boolean, `null`, a list, or an object.
 Quote assignments with spaces or special characters for the shell.
+
+`brand.social:=[...]` replaces the whole list, so include the links that you want to keep.
+
+## Announcement bar
+
+A site can show one announcement bar at the top of every HTML page.
+
+| Command | Result |
+| --- | --- |
+| `cuhlumn announce show` | Prints the announcement and its status |
+| `cuhlumn announce set "<text>" [options]` | Replaces the whole announcement |
+| `cuhlumn announce clear` | Removes the announcement |
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `<text>` | Required | Plain text, 1 to 160 characters |
+| `--link URL` | None | Address that the link opens |
+| `--label TEXT` | `Learn more` | Link text, at most 40 characters. Needs `--link` |
+| `--tone T` | `info` | `info`, `accent`, or `warning` |
+| `--from TIME` | Now | Start time |
+| `--until TIME` | Until cleared | End time, later than `--from` |
+| `--no-dismiss` | Off | Removes the close button |
+
+TIME is RFC 3339, such as `2026-11-10T09:00:00Z`, or unix seconds, such as `1794301200`.
+`set` does not keep old values: omitted options take their defaults.
+
+```sh
+cuhlumn announce set "Maintenance on Sunday." --tone warning \
+  --link https://harbor.example.com/maintenance --label Details \
+  --from 2026-11-10T09:00:00Z --until 2026-11-15T18:00:00Z
+```
+
+Every `announce` command prints `{"status": ..., "announcement": ...}`.
+`status` is `off` (no announcement), `scheduled`, `live`, or `ended`.
+`announcement` is `null` when the status is `off`.
 
 ## Home page
 

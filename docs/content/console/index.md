@@ -1,7 +1,24 @@
 # Management console
 
 The management console is a web interface for every site on the server.
-The server embeds the console and serves it only on the domain in `CUHLUMN_CONSOLE_HOST`.
+The server embeds the console in the binary.
+
+- With a console domain, only that domain serves the console.
+- Without a console domain, every domain that is not a site domain or an alias serves the console.
+
+Set the console domain on the **Server settings** page, or with `CUHLUMN_CONSOLE_HOST`.
+
+## First launch
+
+When the server has no admin token, `GET /api/health` returns `"needs_setup": true`.
+The console then opens the **Setup** page at `/setup`.
+
+1. Enter a token with at least 32 characters in the **Admin token** field, or select **Generate**.
+2. Select **Copy**, and keep the token in a safe place. The server stores only a hash and cannot show the token again.
+3. Select **Save the token and log in**.
+
+The console calls `POST /api/setup` and starts a session.
+After the first setup, the address `/setup` opens the blog list.
 
 ## Log in
 
@@ -12,34 +29,86 @@ The server embeds the console and serves it only on the domain in `CUHLUMN_CONSO
 The server sets a session cookie for the console domain.
 The session expires after 7 days.
 **Log out** in the top bar ends the session.
-A change of `CUHLUMN_TOKEN` ends all sessions.
+A change of the admin token ends all sessions.
 
 ## Screens
 
 | Address | Screen | Actions |
 | --- | --- | --- |
+| `/setup` | Setup | Set the first admin token |
 | `/` | Your blogs | List all sites, open a site, create a site |
+| `/settings` | Server settings | Change the console domain, the scheme, and the admin token |
+| `/fonts` | Font library | Upload fonts, import from Google Fonts, delete fonts |
 | `/new-site` | Site settings | Create a site |
-| `/sites/{host}` | Site settings | Change the settings and the appearance, delete the site |
+| `/sites/{host}` | Site settings | Change the settings, the announcement, and the appearance, delete the site |
 | `/sites/{host}/posts` | Posts and pages | Search by title or slug, filter by status and kind, open the public page |
 | `/sites/{host}/new-post` | Editor | Write a new post or page |
 | `/sites/{host}/posts/{slug}` | Editor | Edit, publish, unpublish, or delete an entry |
 | `/sites/{host}/media` | Media library | Upload, copy the address, delete |
 
-The top bar has a site switcher.
+The top bar has a site switcher and the server links **Fonts** and **Server**.
 Each site has the tabs **Posts**, **Media**, and **Settings**.
+
+## Server settings
+
+The **Server settings** page has two sections.
+
+| Section | Fields |
+| --- | --- |
+| Addresses | Console host, scheme |
+| Admin token | New admin token, **Change the token** |
+
+- An empty console host lets every domain that is not a site serve the console.
+- A field that an environment variable sets is disabled and shows "Set by CUHLUMN_…", such as "Set by CUHLUMN_SCHEME".
+- After a move of the console host, the page shows the new address. The session stays on the old domain, so log in again at the new address.
+- **Change the token** asks for a confirmation. The new token ends all sessions. This browser gets a new session. The CLI and agents need the new token.
+
+See [Server settings reference](../reference/settings.md).
+
+## Font library
+
+The **Fonts** page manages the extra fonts of the share images.
+
+- **Choose font files** uploads TTF, OTF, or TTC files, up to 20 MiB each.
+- **Import** downloads the fonts of a Google Fonts address, such as `https://fonts.google.com/specimen/Noto+Sans+JP`.
+- The table shows the families, the source, the size, and the time of each font.
+- **Delete** asks for a confirmation. Share images that need the characters of the font then use other fonts.
+
+See [Share images](../platform/share-images.md#fonts).
 
 ## Site settings
 
 | Section | Fields |
 | --- | --- |
-| Domains | Host (fixed after creation), aliases, IndexNow key |
+| Domains | Host (fixed after creation), aliases, IndexNow key, **IndexNow** switch |
 | General | Title, description, call to action, author, author address, project name, project address, language, home page |
-| Appearance | Accent with a color picker, font, logo, favicon, share image, header links, head HTML, footer, credit |
+| Announcement | **Show the bar**, text, link, link text, tone, start, end, **Dismissible**, and the status |
+| Appearance | The groups below |
 | Delete site | Deletes the site with all posts, pages, and media after a confirmation |
+
+The **IndexNow** switch turns the notifications of the site on or off.
+
+### Announcement
+
+The status shows **Off**, **Scheduled**, **Live**, or **Ended**.
+The bar shows only between the start and end times.
+An empty end shows the bar with no end.
+See [Announcements](../platform/announcements.md).
+
+### Appearance
+
+| Group | Fields |
+| --- | --- |
+| Colours | Accent with a color picker, palette, theme, **Theme button** |
+| Layout | Width, post list, font, logo, favicon, share image, header links (up to 8) |
+| Code | Code colours |
+| Social | Profile links, **Show in header** |
+| Share image | Generated card, **Date and reading time** |
+| Page extras | Head HTML, footer, credit |
 
 **Pick from media** next to the logo, favicon, and share image fields opens the media library.
 The selected image goes into the field as `/media/{name}`.
+See [Appearance](../platform/appearance.md).
 
 ## Editor
 
@@ -78,7 +147,7 @@ If a screen cannot load its data, it shows the error and a **Retry** button.
 
 The console responses have these headers:
 
-- `Content-Security-Policy: default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'` (with `http:` added to `img-src` when `CUHLUMN_SCHEME=http`)
+- `Content-Security-Policy: default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'` (with `http:` added to `img-src` when the scheme is `http`)
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: same-origin`
 

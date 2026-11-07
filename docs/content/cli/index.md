@@ -24,7 +24,12 @@ The command installs the `cuhlumn` binary in `~/.cargo/bin`.
 
 `cuhlumn health` needs only the server address.
 `cuhlumn site list` needs the server address and the token.
-Every other site, post, and media command also needs the site.
+Every other site, post, media, and announce command also needs the site.
+
+A new server without a token is in setup mode.
+The admin sets the token on the **Setup** page of the console, or sets `CUHLUMN_TOKEN` on the server.
+Until then, admin commands fail with the `needs_setup` error.
+The client uses the token that the admin set.
 
 ## Commands
 
@@ -47,6 +52,9 @@ Every other site, post, and media command also needs the site.
 | `cuhlumn media upload <file>` | Uploads an image and prints its name, address, and `/media/` path |
 | `cuhlumn media list` | Uploaded images |
 | `cuhlumn media delete <name> --yes` | Deletes an image |
+| `cuhlumn announce show` | The announcement bar and its status |
+| `cuhlumn announce set <text> [options]` | Replaces the announcement bar |
+| `cuhlumn announce clear` | Removes the announcement bar |
 | `cuhlumn skill` | Prints the agent skill |
 | `cuhlumn install-skill` | Installs the agent skill into AI agents with the `skills` installer |
 
@@ -111,6 +119,72 @@ The file must say `status: published`, or you pass `--publish` to keep the entry
 
 The client checks the result before it sends it.
 
+### Appearance and IndexNow fields
+
+```sh
+cuhlumn site set indexnow:=false
+cuhlumn site set brand.palette=sepia brand.home_layout=cards
+cuhlumn site set brand.code_theme=ocean brand.card_style=light
+cuhlumn site set 'brand.social:=[{"network": "github", "url": "https://github.com/maralind"}]'
+```
+
+| Field | Default | Values |
+| --- | --- | --- |
+| `indexnow` | `true` | `true` sends IndexNow pings when an entry is published |
+| `brand.palette` | `paper` | `paper`, `slate`, `sepia`, `mono`, `contrast` |
+| `brand.theme` | `system` | `system`, `light`, `dark` |
+| `brand.theme_toggle` | `true` | `true`, `false` |
+| `brand.width` | `normal` | `narrow`, `normal`, `wide` |
+| `brand.home_layout` | `list` | `list`, `compact`, `cards` |
+| `brand.code_theme` | `github` | `github`, `solarized`, `ocean`, `none` |
+| `brand.card_style` | `dark` | `dark`, `light`, `accent` |
+| `brand.card_meta` | `true` | `true`, `false` |
+| `brand.social` | `[]` | Up to 12 `{"network", "url"}` objects, without repetitions |
+| `brand.social_in_header` | `false` | `true`, `false` |
+
+The social networks are `github`, `gitlab`, `codeberg`, `mastodon`, `bluesky`, `x`, `threads`, `linkedin`, `youtube`, `instagram`, `discord`, `telegram`, and `email`.
+Each `url` is an absolute `https://` address, at most 500 characters.
+For `email`, the `url` is a `mailto:` address with one recipient.
+
+## Announcement bar
+
+`cuhlumn announce` shows, replaces, or removes the announcement bar of the site.
+
+```sh
+cuhlumn announce set "Maintenance on Sunday." --tone warning \
+  --link https://harbor.example.com/maintenance --label Details \
+  --from 2026-11-10T09:00:00Z --until 2026-11-15T18:00:00Z
+cuhlumn announce show
+cuhlumn announce clear
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `<text>` | Required | Plain text, 1 to 160 characters |
+| `--link URL` | None | The address that the link opens |
+| `--label TEXT` | `Learn more` | The link text, at most 40 characters. It needs `--link` |
+| `--tone T` | `info` | `info`, `accent`, or `warning` |
+| `--from TIME` | Now | The start time |
+| `--until TIME` | Until you clear it | The end time, later than the start time |
+| `--no-dismiss` | Off | Removes the close button |
+
+TIME is an RFC 3339 time, such as `2026-11-10T09:00:00Z`, or unix seconds, such as `1794301200`.
+`announce set` replaces the whole announcement.
+Omitted options take their defaults, also when the old announcement had other values.
+
+Every `announce` command prints the status and the announcement:
+
+```json
+{"status": "scheduled", "announcement": {"text": "Maintenance on Sunday.", "link": "https://harbor.example.com/maintenance", "link_label": "Details", "tone": "warning", "starts_at": 1794301200, "ends_at": 1794765600, "dismissible": true}}
+```
+
+| Status | Meaning |
+| --- | --- |
+| `off` | The site has no announcement, and `announcement` is `null` |
+| `scheduled` | The start time is in the future |
+| `live` | Readers see the bar now |
+| `ended` | The end time is in the past |
+
 ## Images
 
 `media upload` sends the file with the type from its extension: `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, or `.avif`.
@@ -130,7 +204,7 @@ Use `path` in posts and settings, because it works on every domain and port.
 | Exit code | Meaning |
 | --- | --- |
 | `0` | Success |
-| `1` | The command failed; stderr has one `error:` line |
+| `1` | The command failed. Stderr has one `error:` line |
 | `2` | The command line is invalid |
 
 Server errors start with the [error code](../reference/errors.md), for example `error: conflict: ...`.

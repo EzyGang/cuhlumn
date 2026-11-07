@@ -30,6 +30,8 @@ Unknown fields return `400`.
 | `lang` | [`Lang`](value-types.md#lang) | `"en"` | |
 | `home` | [`Slug`](value-types.md#slug) or `null` | `null` | Must name an existing page of the site |
 | `indexnow_key` | [`IndexNowKey`](value-types.md#indexnowkey) or `null` | `null` | `null` keeps the stored key |
+| `indexnow` | Boolean | `true` | `false` stops the IndexNow notifications of the site |
+| `announcement` | [`Announcement`](#announcement) or `null` | `null` | |
 | `brand` | [`Brand`](#brand) | Defaults below | |
 
 ## `Brand`
@@ -40,7 +42,7 @@ Unknown fields return `400`.
 | Field | Type | Default | Rule |
 | --- | --- | --- | --- |
 | `accent` | [`Accent`](value-types.md#accent) | `"#2563eb"` | |
-| `font` | `"serif"` or `"sans"` | `"serif"` | |
+| `font` | [`Font`](value-types.md#enumerations) | `"serif"` | |
 | `logo` | [`LinkUrl`](value-types.md#linkurl) or `null` | `null` | |
 | `favicon` | `LinkUrl` or `null` | `null` | |
 | `og_image` | `LinkUrl` or `null` | `null` | |
@@ -48,6 +50,18 @@ Unknown fields return `400`.
 | `head` | String | `""` | At most 20,000 bytes |
 | `footer` | String | `""` | At most 500 characters, no control characters |
 | `credit` | Boolean | `true` | |
+| `palette` | [`Palette`](value-types.md#enumerations) | `"paper"` | |
+| `theme` | [`Theme`](value-types.md#enumerations) | `"system"` | |
+| `theme_toggle` | Boolean | `true` | |
+| `width` | [`Width`](value-types.md#enumerations) | `"normal"` | |
+| `home_layout` | [`HomeLayout`](value-types.md#enumerations) | `"list"` | |
+| `social` | Array of [`SocialLink`](#sociallink) | `[]` | At most 12, no repeated network and address |
+| `social_in_header` | Boolean | `false` | |
+| `code_theme` | [`CodeTheme`](value-types.md#enumerations) | `"github"` | |
+| `card_style` | [`CardStyle`](value-types.md#enumerations) | `"dark"` | |
+| `card_meta` | Boolean | `true` | |
+
+See [Appearance](../platform/appearance.md) for the effect of each field.
 
 ## `Link`
 
@@ -55,6 +69,31 @@ Unknown fields return `400`.
 | --- | --- | --- |
 | `label` | String | Trimmed, 1 to 40 characters, no control characters |
 | `url` | `LinkUrl` | |
+
+## `SocialLink`
+
+Unknown fields return `400`.
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `network` | [`Network`](value-types.md#enumerations) | |
+| `url` | String | At most 500 characters. A `mailto:` address with one recipient for `email`, an absolute `https://` address for other networks |
+
+## `Announcement`
+
+Unknown fields return `400`.
+
+| Field | Type | Default | Rule |
+| --- | --- | --- | --- |
+| `text` | String | Required | Trimmed, 1 to 160 characters, no control characters |
+| `link` | `LinkUrl` or `null` | `null` | |
+| `link_label` | String | `"Learn more"` | Trimmed, at most 40 characters, no control characters. Empty becomes the default |
+| `tone` | [`Tone`](value-types.md#enumerations) | `"info"` | |
+| `starts_at` | Integer or `null` | `null` | Unix seconds |
+| `ends_at` | Integer or `null` | `null` | Unix seconds, greater than `starts_at` when both are set |
+| `dismissible` | Boolean | `true` | |
+
+See [Announcements](../platform/announcements.md) for the schedule and the dismissal.
 
 ## `Site`
 
@@ -74,6 +113,8 @@ The answer of the site routes.
 | `lang` | `Lang` |
 | `home` | `Slug` or `null` |
 | `indexnow_key` | `IndexNowKey` |
+| `indexnow` | Boolean |
+| `announcement` | `Announcement` or `null` |
 | `brand` | `Brand` |
 | `updated_at` | Integer, Unix seconds |
 
@@ -86,6 +127,8 @@ The answer of the site routes.
 | `home` names no entry of the site | `400`, field `home` |
 | `home` names a post, not a page | `400`, field `home` |
 | `{host}` is an alias in `GET` or `DELETE` | `404` |
+| `{host}` is the console domain | `409`, field `host` |
+| An alias is the console domain | `409`, field `aliases[N]` |
 
 A new site cannot set `home` in its first `PUT`, because it has no pages yet.
 Create the page first, then set `home`.

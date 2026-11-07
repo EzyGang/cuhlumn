@@ -28,6 +28,11 @@ Posts include the headline, description, address, image, language, author, publi
 The author is a `Person` when the site has an author.
 Otherwise the author is the publisher, an `Organization` with the site title and logo.
 
+The publisher gets a `sameAs` list with the profile addresses from the `social` links of the site.
+Email links are not in the list.
+A site without profile links has no `sameAs` list.
+See [Appearance](appearance.md#social-links).
+
 ## Atom feed
 
 `/feed.xml` contains the 50 latest posts with their full HTML.
@@ -76,14 +81,16 @@ We back up **one SQLite file** every night.
 
 ## IndexNow
 
-When a post is saved with `published` status, the server sends the post address and the home address to `https://api.indexnow.org/indexnow`.
+When a post is saved with `published` status and the site has `indexnow` set to `true`, the server sends the post address and the home address to `https://api.indexnow.org/indexnow`.
 Bing, Yandex, and the other IndexNow engines receive the notification.
 Google reads the sitemap.
 
 - Each site has its own key, served at `/{key}.txt`.
 - A new site gets a random key of 32 hexadecimal characters.
 - A site update without `indexnow_key` keeps the current key.
-- `CUHLUMN_INDEXNOW=off` stops all notifications.
+- `indexnow` is on by default. Set it to `false` to stop the notifications of one site.
+- The console shows the **IndexNow** switch next to the key in the **Domains** section.
+- The key file stays available when `indexnow` is `false`.
 
 The notification runs in the background.
 The API answer does not wait for it, and a failure only goes to the server log.

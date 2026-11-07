@@ -1,7 +1,7 @@
 # Preview
 
 `POST /api/sites/{host}/preview` renders Markdown with the same renderer as the public pages.
-The answer contains the body HTML only, without the page layout or CSS.
+The answer contains the body HTML without the page layout, and the site stylesheet in a separate field.
 
 ## `PreviewInput`
 
@@ -16,8 +16,10 @@ The answer contains the body HTML only, without the page layout or CSS.
 | `html` | String | The rendered body |
 | `toc` | Array of `TocEntry` | Every second- and third-level heading |
 | `word_count` | Integer | The number of words, code included |
+| `css` | String | The full stylesheet of the site, with the palette, accent, width, font, and code colors of the stored `brand` |
 
 The public page shows the table of contents only when `toc` has three or more entries.
+A client can put `html` and `css` into one document to show the post as the blog shows it.
 
 ## `TocEntry`
 

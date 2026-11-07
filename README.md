@@ -75,36 +75,47 @@ Home pages, posts, and pages score 100 in all four Lighthouse categories.
 **📦 Simple to operate**
 Back up one folder.
 Run one container.
+The first visit to the console sets the admin token, so no secret must go into the environment.
 Put Cloudflare or any TLS proxy in front of it.
 
 | Feature | Result |
 | --- | --- |
 | Multi-domain hosting | Serves many blogs, each with aliases that redirect to the main domain |
 | Drafts | Keeps unpublished posts out of pages, feeds, and sitemaps |
-| Share images | Generates a 1200×630 card for each blog and each post |
-| IndexNow | Notifies Bing, Yandex, and other engines when a post is published |
-| Management console | Edits sites, posts, appearance, and images in the browser |
+| Share images | Generates a 1200×630 card for each blog and each post, in three styles |
+| IndexNow | Notifies Bing, Yandex, and other engines when a post is published, per blog |
+| Appearance | Five palettes, three widths, three home layouts, social icons, and code highlighting |
+| Announcement bar | Shows a scheduled message above every page of a blog |
+| Management console | Edits sites, posts, appearance, images, fonts, and server settings in the browser |
 | Agent skill | Installs into Claude Code, Codex, Cursor, and other agents |
 
 ---
 
 ## Installation
 
-### Server with Docker
+### Server with Docker Compose
 
-Build the image and start a container:
+Download `docker-compose.yml` and `.env.example` from this repository, then start the server:
 
 ```bash
-docker build -t cuhlumn .
-docker run -d --name cuhlumn -p 8080:8080 -v cuhlumn-data:/data \
-  -e CUHLUMN_TOKEN="$(openssl rand -hex 32)" \
-  -e CUHLUMN_CONSOLE_HOST=admin.example.com \
-  cuhlumn
+cp .env.example .env
+docker compose up -d
 ```
+
+Compose starts the image `ghcr.io/ezygang/cuhlumn` and publishes the port on `127.0.0.1:8080`.
+The image checks itself with `cuhlumn-server healthcheck`.
+Add `--profile tunnel` and set `CLOUDFLARE_TUNNEL_TOKEN` to start a Cloudflare tunnel next to the server.
+
+On the first launch without `CUHLUMN_TOKEN`, open the console and set the admin token on the **Setup** page.
+
+> [!WARNING]
+> In setup mode, the first visitor of the console sets the token and controls the server.
+> Set `CUHLUMN_TOKEN` in `.env`, or keep the port private until you complete the setup.
 
 Point every blog domain and the console domain at the server.
 Put a TLS proxy in front of the server that keeps the `Host` header.
 [Cloudflare](docs/content/operations/cloudflare.md) is the recommended proxy because it also caches the pages.
+[Read the installation guide](docs/content/getting-started/installation.md).
 
 ### Server from source
 
@@ -212,16 +223,26 @@ A blog can show one of its pages as the home page, with the latest posts below i
 | Social previews | Open Graph and Twitter tags with a generated share image |
 | Crawler files | `sitemap.xml`, `feed.xml`, `robots.txt`, `llms.txt`, `llms-full.txt` |
 | Markdown copies | `/{slug}.md` for every published entry |
-| IndexNow | A notification for each published post |
+| IndexNow | A notification for each published post, when the blog has IndexNow on |
+| Profile links | Social links in the JSON-LD `sameAs` list of the publisher |
 
 [Read about discovery](docs/content/platform/discovery.md).
 
 ### Appearance
 
 Each blog sets its accent color, text font, logo, favicon, share image, header links, extra head HTML, and footer text.
-Link colors are adjusted until they meet WCAG AA contrast in the light and the dark theme.
+It also selects a palette, a theme mode, a column width, a home page layout, a code theme, and a share image style.
+Social profile links show as icons in the footer, and optionally in the header.
+Link and code colors are adjusted until they meet WCAG AA contrast in the light and the dark theme.
+
+Each blog can show an announcement bar with a start time, an end time, and a link.
+
+Share images use Inter first, then the system fonts and the font library.
+Upload font files or import them from Google Fonts to add characters for other scripts.
 
 [Read about appearance](docs/content/platform/appearance.md).
+[Read about announcements](docs/content/platform/announcements.md).
+[Read about share images](docs/content/platform/share-images.md).
 
 ### Performance
 
@@ -235,18 +256,20 @@ A post page transfers about 5 KiB.
 
 ## Configuration
 
-The server reads environment variables:
+The server reads a few environment variables.
+You change the admin token, the console domain, and the scheme on the **Server settings** page of the console.
+The three override variables win over the console values, and the console then shows those fields as locked.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `CUHLUMN_TOKEN` | none | Admin token, at least 32 bytes; without it the API and the console stay off |
-| `CUHLUMN_CONSOLE_HOST` | none | Domain of the management console |
-| `CUHLUMN_DATA` | `./data` | Folder that holds the database and the uploaded images |
-| `CUHLUMN_SCHEME` | `https` | Scheme in generated addresses and the cookie `Secure` flag |
-| `CUHLUMN_INDEXNOW` | `on` | `off` disables IndexNow notifications |
-| `CUHLUMN_FONTS` | none | Extra fonts for share images |
 | `PORT` | `8080` | Listen port |
+| `CUHLUMN_DATA` | `./data` | Folder that holds the database, the uploaded images, and the fonts |
 | `RUST_LOG` | `info` | Log filter |
+| `CUHLUMN_TOKEN` | none | Optional override of the admin token, at least 32 bytes |
+| `CUHLUMN_CONSOLE_HOST` | none | Optional override of the console domain |
+| `CUHLUMN_SCHEME` | `https` | Optional override of the scheme in generated addresses and the cookie `Secure` flag |
+
+IndexNow is a setting of each site, and fonts for share images are uploaded in the console.
 
 [Read the configuration guide](docs/content/operations/configuration.md).
 
@@ -263,6 +286,8 @@ The server reads environment variables:
 | `cuhlumn post publish <slug>` | Make a post visible |
 | `cuhlumn post unpublish <slug>` | Hide a post and keep it as a draft |
 | `cuhlumn media upload <image>` | Upload an image and print its `/media/` path |
+| `cuhlumn announce set "<text>"` | Show an announcement bar on every page |
+| `cuhlumn announce clear` | Remove the announcement bar |
 | `cuhlumn install-skill` | Install the agent skill |
 
 [Read the complete CLI reference](docs/content/cli/index.md).
@@ -272,11 +297,18 @@ The server reads environment variables:
 ## API Quick Reference
 
 Admin requests send `Authorization: Bearer <token>` to any domain of the server.
+Before the first setup, admin routes return `503` with the code `needs_setup`.
 Errors are JSON objects with a `code`, a `message`, and the invalid `field`.
 
 | Route | Purpose |
 | --- | --- |
-| `GET /api/health` | Server status and version |
+| `GET /api/health` | Server status, version, and the setup flag |
+| `POST /api/setup` | Set the first admin token |
+| `GET`, `PUT /api/settings` | Console host and scheme |
+| `PUT /api/settings/token` | Change the admin token |
+| `GET`, `POST /api/fonts` | List or upload share image fonts |
+| `POST /api/fonts/google` | Import fonts from Google Fonts |
+| `DELETE /api/fonts/{name}` | Delete a font |
 | `GET /api/sites` | All blogs |
 | `GET`, `PUT`, `DELETE /api/sites/{host}` | One blog |
 | `GET /api/sites/{host}/posts` | Every post and page, including drafts |

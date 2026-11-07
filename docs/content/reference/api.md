@@ -1,23 +1,25 @@
 # HTTP API overview
 
-The HTTP API manages sites, posts, media, and console sessions.
+The HTTP API manages sites, posts, media, fonts, server settings, and console sessions.
 Every route is under `/api` and answers on every domain of the server.
 
 ## Authentication
 
 Admin routes accept one of these credentials:
 
-- `Authorization: Bearer <CUHLUMN_TOKEN>` on any domain
-- The `cuhlumn_session` cookie, only on the console domain
+- `Authorization: Bearer <token>` on any domain
+- The `cuhlumn_session` cookie, only on a domain that serves the console
 
 The bearer token has precedence.
 A wrong bearer token returns `401`, even when a valid cookie is present.
 An `Authorization` header with another scheme, such as `Basic` from a proxy, is ignored, and the cookie decides.
 
-Cookie requests with a method that changes data (`POST`, `PUT`, `DELETE`) must send an `Origin` header for the console domain.
+Cookie requests with a method that changes data (`POST`, `PUT`, `DELETE`) must send an `Origin` header for the console domain of the request.
 Browsers send this header automatically.
 
-Without `CUHLUMN_TOKEN`, every admin route and every session route returns `503` with the code `api_disabled`.
+The admin token comes from `CUHLUMN_TOKEN`, or from the database after the first setup.
+Before the first setup, every admin route and every session route returns `503` with the code `needs_setup`.
+`GET /api/health` and `POST /api/setup` work before the setup.
 See [Security](../operations/security.md) for the token and session rules.
 
 ## Routes
@@ -25,6 +27,14 @@ See [Security](../operations/security.md) for the token and session rules.
 | Method | Path | Authentication | Body | Success |
 | --- | --- | --- | --- | --- |
 | `GET` | `/api/health` | None | None | `200` [`Health`](#health) |
+| `POST` | `/api/setup` | None, only before the first setup | [`TokenInput`](settings.md#tokeninput) | `200` `Session`, with `Set-Cookie` on the console domain |
+| `GET` | `/api/settings` | Admin | None | `200` [`ServerSettings`](settings.md#serversettings) |
+| `PUT` | `/api/settings` | Admin | [`ServerSettingsInput`](settings.md#serversettingsinput) | `200` `ServerSettings` |
+| `PUT` | `/api/settings/token` | Admin | `TokenInput` | `200` `Session`, with `Set-Cookie` on the console domain |
+| `GET` | `/api/fonts` | Admin | None | `200` array of [`FontItem`](fonts.md#fontitem) |
+| `POST` | `/api/fonts` | Admin | Raw font bytes | `200` `FontItem` |
+| `POST` | `/api/fonts/google` | Admin | [`GoogleFontInput`](fonts.md#googlefontinput) | `200` array of `FontItem` |
+| `DELETE` | `/api/fonts/{name}` | Admin | None | `204` |
 | `POST` | `/api/session` | Console domain | [`SessionInput`](sessions.md) | `200` `Session` and `Set-Cookie` |
 | `GET` | `/api/session` | Console cookie | None | `200` `Session` |
 | `DELETE` | `/api/session` | Console cookie | None | `204` |
@@ -45,11 +55,24 @@ An unknown `/api` path returns `404`.
 A known path with a wrong method returns `405`.
 Both answers use the [error format](errors.md).
 
+## Status codes
+
+| Status | Routes | Cause |
+| --- | --- | --- |
+| `400` | All routes with a body or a path parameter | Invalid JSON or a value that breaks a rule |
+| `401` | Admin routes, `POST /api/session` | A missing or wrong token or session |
+| `403` | Cookie requests that change data, `POST /api/session`, `POST /api/setup` | The `Origin` header names another domain |
+| `404` | Routes with a path parameter, session routes | The object does not exist, or the domain does not serve the console |
+| `409` | `POST /api/setup`, `PUT /api/settings`, `PUT /api/settings/token`, site and post writes | See [Conflicts](errors.md#conflicts) and [Locked values](errors.md#locked-values) |
+| `413` | Routes with a body | The body is larger than the limit |
+| `415` | JSON routes, media upload | The content type is not accepted |
+| `503` | Admin routes and session routes | The server has no admin token yet (`needs_setup`) |
+
 ## Path parameters
 
 - `{host}` is the canonical domain of a site. An alias returns `404`. The server lowercases the value and removes trailing dots.
 - `{slug}` follows the [slug rules](value-types.md#slug).
-- `{name}` is a media file name such as `ba7816bf8f01cfea414140de5dae2223.png`.
+- `{name}` is a media file name such as `ba7816bf8f01cfea414140de5dae2223.png`, or a font file name such as `Inter-Regular-1a2b3c4d.ttf`.
 
 An invalid path parameter returns `400` with the code `validation` and the parameter name in `field`.
 
@@ -59,7 +82,7 @@ An invalid path parameter returns `400` with the code `validation` and the param
 - JSON input objects reject unknown fields.
 - Omitted optional fields take their default values.
 - A `PUT` replaces the complete object.
-- JSON bodies can be at most 2 MB. Media uploads can be at most 16 MiB. A larger body returns `413`.
+- JSON bodies can be at most 2 MB. Media uploads can be at most 16 MiB. Font uploads can be at most 20 MiB. A larger body returns `413`.
 
 ## Timestamps
 
@@ -67,11 +90,14 @@ All timestamps are Unix time in seconds.
 
 ## Health
 
-`GET /api/health` needs no authentication and works without a token.
+`GET /api/health` needs no authentication and works before the setup.
 
 ```json
-{ "ok": true, "version": "0.1.0" }
+{ "ok": true, "version": "0.1.0", "needs_setup": false }
 ```
+
+`needs_setup` is `true` while the server has no admin token.
+The console then shows the **Setup** page.
 
 ## Example
 

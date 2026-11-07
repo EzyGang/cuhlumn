@@ -1,6 +1,7 @@
 # Data and backups
 
 The server keeps all data in the folder from `CUHLUMN_DATA`.
+With Docker Compose, this folder is `/data` in the volume `cuhlumn-data`.
 
 ```text
 data/
@@ -10,6 +11,7 @@ data/
   media/
     blog.example.com/
       ba7816bf8f01cfea414140de5dae2223.png
+  fonts/              Fonts from the font library
 ```
 
 ## Database
@@ -21,6 +23,8 @@ data/
 | `posts` | Posts and pages with their Markdown bodies |
 | `media` | One record for each uploaded image |
 | `sessions` | Hashed console sessions |
+| `settings` | One row with the token digest, the console domain, and the scheme |
+| `fonts` | One record for each font file in the font library |
 
 - The database uses WAL mode, foreign keys, and a busy timeout of 5 seconds.
 - Deleting a site deletes its aliases, posts, and media records.
@@ -34,10 +38,10 @@ Do not open the database with an older server version after a migration.
 
 ## Backups
 
-Back up the database and the media folder together.
+Back up the database, the media folder, and the fonts folder together.
 
 1. Copy the database with the SQLite online backup, for example `sqlite3 data/cuhlumn.db ".backup backup.db"`.
-2. Copy the `media` folder.
+2. Copy the `media` folder and the `fonts` folder.
 
 A plain file copy of `cuhlumn.db` while the server runs can miss data in the WAL file.
 Stop the server first if you copy the files directly.
@@ -45,5 +49,5 @@ Stop the server first if you copy the files directly.
 ## Restore
 
 1. Stop the server.
-2. Put the database file and the `media` folder in the data folder.
+2. Put the database file, the `media` folder, and the `fonts` folder in the data folder.
 3. Start the server.
