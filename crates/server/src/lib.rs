@@ -23,7 +23,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::{state::AppState, web::request::request_host};
 
-/// Builds the router for every host.
+/// Builds the router of the single listener, for every host.
 ///
 /// All hosts get `/api`. The console hosts get the console for other paths, and the other hosts get the blogs.
 pub fn router(state: AppState) -> Router {
@@ -32,6 +32,36 @@ pub fn router(state: AppState) -> Router {
         .fallback(site_or_console)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
+}
+
+/// Builds the router of the public listener when an admin listener is on.
+///
+/// It serves the blogs and `GET /api/health`, and never the console or the admin API.
+pub fn public_router(state: AppState) -> Router {
+    Router::new()
+        .nest("/api", api::public_routes())
+        .fallback(site)
+        .layer(TraceLayer::new_for_http())
+        .with_state(state)
+}
+
+/// Builds the router of the admin listener.
+///
+/// Every host gets `/api` and the console for other paths, without host routing.
+pub fn admin_router(state: AppState) -> Router {
+    Router::new()
+        .nest("/api", api::routes())
+        .fallback(console_only)
+        .layer(TraceLayer::new_for_http())
+        .with_state(state)
+}
+
+async fn site(State(state): State<AppState>, request: Request) -> Response {
+    web::public(state, request).await
+}
+
+async fn console_only(State(state): State<AppState>, request: Request) -> Response {
+    console::serve(&state, request.method(), request.uri().path())
 }
 
 async fn site_or_console(State(state): State<AppState>, request: Request) -> Response {

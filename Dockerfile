@@ -34,7 +34,7 @@ RUN apt-get update \
 COPY --from=server /usr/local/bin/cuhlumn-server /usr/local/bin/cuhlumn-server
 ENV CUHLUMN_DATA=/data PORT=8080
 VOLUME /data
-EXPOSE 8080
+EXPOSE 8080 8081
 USER cuhlumn
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD ["cuhlumn-server", "healthcheck"]

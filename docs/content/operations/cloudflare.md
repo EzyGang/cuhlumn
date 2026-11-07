@@ -35,6 +35,7 @@ Without a cache rule, every page view of a post goes to the server.
 
 The console domain can also go through Cloudflare.
 The cache rule below excludes it.
+With an [admin listener](configuration.md#admin-listener), the console has no domain, and only the blog domains go through Cloudflare.
 
 #### Cloudflare Tunnel with Compose
 
@@ -48,6 +49,11 @@ The tunnel starts after the server health check passes.
 5. Start the stack with `docker compose --profile tunnel up -d`.
 
 With the tunnel, the server port does not need to be open to the internet.
+
+!!! warning "Point the tunnel only at the public port"
+    When `CUHLUMN_ADMIN_ADDR` is set, the console and the admin API are on port 8081.
+    Send the tunnel only to `http://cuhlumn:8080`, and do not add a console hostname.
+    Reach the admin port over a private network, as in [Private admin port](../getting-started/installation.md#private-admin-port).
 
 ### 2. Configure TLS
 

@@ -13,11 +13,13 @@ use crate::{
 /// The server settings that requests use.
 ///
 /// An override from [`Config`] wins over the stored value and locks the field.
+/// An admin address turns the console host off and locks it.
 #[derive(Clone, Debug)]
 pub struct Settings {
     token: Option<Token>,
     console_host: Option<Host>,
     scheme: Scheme,
+    admin_listener: bool,
     locked: Locked,
 }
 
@@ -25,9 +27,10 @@ impl Settings {
     /// Combines the overrides of `config` with the `stored` values.
     #[must_use]
     pub fn resolve(config: &Config, stored: &StoredSettings) -> Self {
+        let admin_listener = config.admin_addr.is_some();
         let locked = Locked {
             token: config.token.is_some(),
-            console_host: config.console_host.is_some(),
+            console_host: config.console_host.is_some() || admin_listener,
             scheme: config.scheme.is_some(),
         };
         let token = config.token.clone().or_else(|| {
@@ -38,14 +41,16 @@ impl Settings {
             }
             token
         });
-        let console_host = match &config.console_host {
-            Some(host) => Some(host.clone()),
-            None => stored.console_host.clone(),
+        let console_host = match (admin_listener, &config.console_host) {
+            (true, _) => None,
+            (false, Some(host)) => Some(host.clone()),
+            (false, None) => stored.console_host.clone(),
         };
         Self {
             token,
             console_host,
             scheme: config.scheme.or(stored.scheme).unwrap_or_default(),
+            admin_listener,
             locked,
         }
     }
@@ -63,12 +68,22 @@ impl Settings {
     }
 
     /// Returns the only host that serves the console, or `None` when every host that is not a site serves it.
+    ///
+    /// With an admin listener, it is always `None`, because the console has no host there.
     #[must_use]
     pub fn console_host(&self) -> Option<&Host> {
         self.console_host.as_ref()
     }
 
-    /// Returns the scheme of absolute addresses and of the cookie `Secure` flag.
+    /// Returns `true` when the console and the admin API are only on the admin listener.
+    #[must_use]
+    pub fn admin_listener(&self) -> bool {
+        self.admin_listener
+    }
+
+    /// Returns the scheme of absolute addresses.
+    ///
+    /// Without an admin listener, it also sets the cookie `Secure` flag.
     #[must_use]
     pub fn scheme(&self) -> Scheme {
         self.scheme
@@ -92,6 +107,7 @@ impl Settings {
         ServerSettings {
             console_host: self.console_host.clone(),
             scheme: self.scheme,
+            admin_listener: self.admin_listener,
             locked: self.locked,
         }
     }
@@ -112,6 +128,7 @@ mod tests {
     fn config() -> Config {
         Config {
             port: 0,
+            admin_addr: None,
             data: "./data".into(),
             token: None,
             console_host: None,
@@ -163,5 +180,23 @@ mod tests {
             settings.origin(&Host::new("harbor.example.com").unwrap()),
             "https://harbor.example.com"
         );
+    }
+
+    #[test]
+    fn admin_listener_turns_the_console_host_off() {
+        let mut config = config();
+        config.admin_addr = Some("100.92.3.4:8081".parse().unwrap());
+        config.console_host = Some(Host::new("admin.harbor.example.com").unwrap());
+        let stored = StoredSettings {
+            console_host: Some(Host::new("console.harbor.example.com").unwrap()),
+            ..StoredSettings::default()
+        };
+        let settings = Settings::resolve(&config, &stored);
+        assert!(settings.admin_listener());
+        assert_eq!(settings.console_host(), None);
+        assert!(settings.locked().console_host);
+        let api = settings.to_api();
+        assert!(api.admin_listener && api.locked.console_host);
+        assert_eq!(api.console_host, None);
     }
 }

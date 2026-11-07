@@ -47,6 +47,7 @@ impl Server {
         let runtime = Runtime::new().unwrap();
         let config = Config {
             port: 0,
+            admin_addr: None,
             data: data.path().to_owned(),
             token: Some(Token::new(TOKEN).unwrap()),
             console_host: None,

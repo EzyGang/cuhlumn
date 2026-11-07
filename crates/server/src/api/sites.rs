@@ -105,6 +105,8 @@ fn not_found(host: &Host) -> ApiError {
 }
 
 /// Rejects a site domain or alias that is the console host.
+///
+/// Without a console host, for example with an admin listener, every name passes.
 fn check_console(console: Option<&Host>, host: &Host, aliases: &[Host]) -> Result<(), ApiError> {
     let Some(console) = console else {
         return Ok(());

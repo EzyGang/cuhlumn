@@ -1,4 +1,4 @@
-//! The embedded management console, served only on the console hosts.
+//! The embedded management console, served on the console hosts or on every host of the admin listener.
 
 use std::borrow::Cow;
 

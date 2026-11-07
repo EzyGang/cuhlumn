@@ -25,6 +25,7 @@ export const TokenField = ({
         type={draft.data.visible ? "text" : "password"}
         value={draft.data.token}
         onValueChange={draft.actions.setToken}
+        inputRef={draft.data.input}
         autoComplete="new-password"
         spellCheck={false}
         disabled={disabled}

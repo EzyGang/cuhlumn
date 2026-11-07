@@ -3,6 +3,7 @@
 use std::{
     ffi::{OsStr, OsString},
     fmt,
+    net::SocketAddr,
     path::PathBuf,
     str::FromStr,
 };
@@ -16,6 +17,7 @@ use subtle::ConstantTimeEq;
 ///
 /// The token, the console host, and the scheme are overrides.
 /// When one is set, it wins over the database value and the console cannot change it.
+/// The admin address moves the console and the admin API to a second listener.
 #[derive(Clone, Debug, Parser)]
 #[command(
     name = "cuhlumn-server",
@@ -26,6 +28,10 @@ pub struct Config {
     /// Port to listen on, on all addresses.
     #[arg(long, env = "PORT", default_value_t = 8080)]
     pub port: u16,
+    /// Address of a second listener, such as `0.0.0.0:8081`, for the console and the admin API.
+    /// When it is set, the `PORT` listener serves only the blogs and the health check.
+    #[arg(long, env = "CUHLUMN_ADMIN_ADDR")]
+    pub admin_addr: Option<SocketAddr>,
     /// Folder for `cuhlumn.db`, the uploaded images, and the font library.
     #[arg(long, env = "CUHLUMN_DATA", default_value = "./data")]
     pub data: PathBuf,
@@ -35,7 +41,8 @@ pub struct Config {
     /// Domain that serves the console. It overrides the console setting.
     #[arg(long, env = "CUHLUMN_CONSOLE_HOST")]
     pub console_host: Option<Host>,
-    /// Scheme of absolute addresses and of the cookie `Secure` flag, `http` or `https`.
+    /// Scheme of absolute addresses, `http` or `https`.
+    /// Without an admin address, it also sets the cookie `Secure` flag.
     #[arg(long, env = "CUHLUMN_SCHEME")]
     pub scheme: Option<Scheme>,
     /// An optional task to run instead of the server.
@@ -208,6 +215,8 @@ mod tests {
                 "Console.Example.com",
                 "--token",
                 "0123456789abcdef0123456789abcdef",
+                "--admin-addr",
+                "100.92.3.4:8081",
             ],
             no_env,
         )
@@ -215,17 +224,35 @@ mod tests {
         assert_eq!(config.port, 9000);
         assert_eq!(config.scheme, Some(Scheme::Http));
         assert_eq!(config.console_host.unwrap().as_str(), "console.example.com");
+        assert_eq!(config.admin_addr, Some("100.92.3.4:8081".parse().unwrap()));
         assert_eq!(config.command, None);
         let bad = Config::try_from_args(["cuhlumn-server", "--token", "short"], no_env);
         assert!(bad.is_err());
         let check = Config::try_from_args(["cuhlumn-server", "healthcheck"], no_env).unwrap();
         assert_eq!(check.command, Some(Task::Healthcheck));
         assert_eq!(check.scheme, None);
+        assert_eq!(check.admin_addr, None);
+    }
+
+    #[test]
+    fn admin_address_needs_a_port() {
+        let args = ["cuhlumn-server", "--admin-addr", "[fd00::1]:8081"];
+        let config = Config::try_from_args(args, no_env).unwrap();
+        assert_eq!(config.admin_addr, Some("[fd00::1]:8081".parse().unwrap()));
+        for value in ["0.0.0.0", "admin.harbor.example.com:8081", "8081"] {
+            let bad = Config::try_from_args(["cuhlumn-server", "--admin-addr", value], no_env);
+            assert!(bad.is_err(), "{value}");
+        }
     }
 
     #[test]
     fn empty_environment_values_count_as_unset() {
-        let names = ["CUHLUMN_TOKEN", "CUHLUMN_CONSOLE_HOST", "CUHLUMN_SCHEME"];
+        let names = [
+            "CUHLUMN_TOKEN",
+            "CUHLUMN_CONSOLE_HOST",
+            "CUHLUMN_SCHEME",
+            "CUHLUMN_ADMIN_ADDR",
+        ];
         let watched = |command: &clap::Command| {
             command
                 .get_arguments()
@@ -242,5 +269,6 @@ mod tests {
         let config = Config::try_from_args(["cuhlumn-server"], empty).unwrap();
         assert!(config.token.is_none());
         assert!(config.scheme.is_none());
+        assert!(config.admin_addr.is_none());
     }
 }

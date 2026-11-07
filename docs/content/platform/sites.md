@@ -40,6 +40,7 @@ The admin sets it on the **Server settings** page of the console, or with `CUHLU
 - Without a console domain, every domain that is not a site domain or an alias serves the console.
 - A site write with the console domain as its domain or alias returns `409` with the code `conflict`.
 - A console domain that belongs to a site returns `409` from `PUT /api/settings`.
+- With an [admin listener](../operations/configuration.md#admin-listener), no domain serves the console, and site domains and aliases can use any name.
 
 ## Site settings
 

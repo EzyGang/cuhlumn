@@ -29,6 +29,8 @@ Put a TLS proxy or a Cloudflare tunnel in front of it.
 | `CUHLUMN_TOKEN` | Optional admin token, see [First launch](#first-launch) |
 | `CUHLUMN_CONSOLE_HOST` | Optional console domain |
 | `CUHLUMN_SCHEME` | Optional scheme, `https` by default |
+| `CUHLUMN_ADMIN_ADDR` | Optional admin listener in the container, see [Private admin port](#private-admin-port) |
+| `CUHLUMN_ADMIN_PUBLISH` | The host address of the admin port, `127.0.0.1:8081` by default |
 | `RUST_LOG` | The log filter |
 | `CLOUDFLARE_TUNNEL_TOKEN` | The tunnel token, for the `tunnel` profile only |
 
@@ -67,7 +69,7 @@ The `Dockerfile` builds the console, then the server with the console embedded.
 | Binary | `/usr/local/bin/cuhlumn-server` |
 | User | `cuhlumn`, user id `10001` |
 | Data volume | `/data` |
-| Port | `8080` |
+| Ports | `8080` for the blogs, `8081` for the optional admin listener |
 | Environment | `CUHLUMN_DATA=/data`, `PORT=8080` |
 | Health check | `cuhlumn-server healthcheck` |
 
@@ -111,6 +113,7 @@ The server stores the SHA-256 digest of the token and logs you in.
 
     - Set `CUHLUMN_TOKEN` before the first start.
     - Keep the port private until you complete the setup, for example with an SSH tunnel.
+    - Set `CUHLUMN_ADMIN_ADDR`, so that only the private admin port serves the console.
 
 When `CUHLUMN_TOKEN` is set, the server does not use setup mode.
 See [Configuration](../operations/configuration.md).
@@ -127,6 +130,35 @@ The scheme setting sets the scheme in the addresses that the server writes, whic
 
 We recommend [Cloudflare](../operations/cloudflare.md) as the proxy in front of the blog domains.
 Cloudflare caches the pages near the readers, so the server renders much less.
+
+## Private admin port
+
+You can move the console and the admin API to a second port on a private network, such as NetBird.
+Then the public port serves only the blogs and `GET /api/health`.
+
+The admin port works with HTTPS and without HTTPS:
+
+- HTTPS is supported and recommended when the network does not encrypt traffic. Put a TLS proxy in front of the admin port that sets `X-Forwarded-Proto: https`. The session cookie then gets `Secure`.
+- Plain HTTP also works. This is acceptable on a private network that encrypts traffic itself, such as NetBird or another WireGuard network.
+- On plain HTTP, browsers block the clipboard API. The token **Copy** buttons then select the token, and the media library shows the address in a message, so you can copy it by hand.
+
+The example below uses NetBird, which encrypts the traffic, so it uses plain HTTP.
+
+Set these variables in `.env`, with the NetBird address of the server:
+
+```sh
+CUHLUMN_ADMIN_ADDR=0.0.0.0:8081
+CUHLUMN_ADMIN_PUBLISH=100.92.3.4:8081
+```
+
+1. Start the server with `docker compose up -d`.
+2. On a computer in the NetBird network, open `http://100.92.3.4:8081/`.
+3. Complete the setup, or log in with the admin token.
+4. For the CLI, set `CUHLUMN_SERVER=http://100.92.3.4:8081`.
+
+Send the Cloudflare tunnel and the public TLS proxy only to the public port 8080.
+The console domain setting has no effect when the admin port is on.
+See [Admin listener](../operations/configuration.md#admin-listener).
 
 ## Check the installation
 

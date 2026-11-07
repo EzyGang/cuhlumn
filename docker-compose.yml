@@ -10,11 +10,14 @@ services:
     build: .
     ports:
       - "127.0.0.1:${CUHLUMN_PORT:-8080}:8080"
+      # The admin port. Nothing listens on it while CUHLUMN_ADMIN_ADDR is not set.
+      - "${CUHLUMN_ADMIN_PUBLISH:-127.0.0.1:8081}:8081"
     # A name without a value passes the variable only when it is set.
     environment:
       - CUHLUMN_TOKEN
       - CUHLUMN_CONSOLE_HOST
       - CUHLUMN_SCHEME
+      - CUHLUMN_ADMIN_ADDR
       - RUST_LOG
     volumes:
       - cuhlumn-data:/data

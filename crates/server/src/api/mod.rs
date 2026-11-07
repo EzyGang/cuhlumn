@@ -68,6 +68,16 @@ pub fn routes() -> Router<AppState> {
         .method_not_allowed_fallback(method_not_allowed)
 }
 
+/// Returns the API routes of the public listener when an admin listener is on. Nest them under `/api`.
+///
+/// Only the health check is there. Every other path gets the JSON 404 response.
+pub fn public_routes() -> Router<AppState> {
+    Router::new()
+        .route("/health", get(health))
+        .fallback(not_found)
+        .method_not_allowed_fallback(method_not_allowed)
+}
+
 async fn health(State(state): State<AppState>) -> Json<Health> {
     Json(Health {
         ok: true,

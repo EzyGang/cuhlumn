@@ -61,6 +61,9 @@ const save = async (settings: Loaded<ServerSettings>, state: AddressState): Prom
 const lockText = (locked: boolean, variable: string): string | null =>
   locked ? `Set by ${variable}` : null;
 
+const ADMIN_PORT_LOCK =
+  "The console runs on the admin port (CUHLUMN_ADMIN_ADDR), so it has no console domain.";
+
 const addressData = (
   state: AddressState,
   current: ServerSettings | null,
@@ -68,7 +71,10 @@ const addressData = (
   host: state.host.value ?? current?.console_host ?? "",
   scheme: state.scheme.value ?? current?.scheme ?? "https",
   schemes: SCHEMES,
-  hostLock: lockText(current?.locked.console_host === true, "CUHLUMN_CONSOLE_HOST"),
+  hostLock:
+    current?.admin_listener === true
+      ? ADMIN_PORT_LOCK
+      : lockText(current?.locked.console_host === true, "CUHLUMN_CONSOLE_HOST"),
   schemeLock: lockText(current?.locked.scheme === true, "CUHLUMN_SCHEME"),
   hostError: state.errors.value["console_host"],
   movedTo: state.movedTo.value,

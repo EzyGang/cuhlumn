@@ -9,13 +9,12 @@ use axum::{
 };
 use cuhlumn_api::{
     settings::Scheme,
-    site::host::Host,
     wire::{Session, SessionInput},
 };
 
 use crate::{
     api::{
-        auth::{SESSION_COOKIE, check_origin, console_host, session_cookie},
+        auth::{Console, SESSION_COOKIE, console, session_cookie},
         error::ApiError,
         json::Json,
     },
@@ -24,11 +23,11 @@ use crate::{
     state::AppState,
 };
 
-/// Proof that the server has a token and that the request addresses a console host.
+/// Proof that the server has a token and that the request addresses the console.
 #[derive(Clone, Debug)]
 pub struct ConsoleHost {
     token: Token,
-    host: Host,
+    console: Console,
 }
 
 /// Logs in with the admin token and sets the session cookie.
@@ -42,13 +41,11 @@ pub async fn login(
     headers: HeaderMap,
     Json(input): Json<SessionInput>,
 ) -> Result<Response, ApiError> {
-    if headers.contains_key(header::ORIGIN) {
-        check_origin(&headers, &console.host)?;
-    }
+    console.console.check_origin_if_sent(&headers)?;
     if !console.token.matches(&input.token) {
         return Err(ApiError::Unauthorized);
     }
-    start(&state, &console.token, true).await
+    start(&state, &console.token, Some(&headers)).await
 }
 
 /// Returns the session of the cookie.
@@ -83,20 +80,21 @@ pub async fn logout(
     headers: HeaderMap,
 ) -> Result<Response, ApiError> {
     if let Some(id) = session_cookie(&headers) {
-        check_origin(&headers, &console.host)?;
+        console.console.check_origin(&headers)?;
         let id_hash = console.token.session_hash(id);
         state
             .db()
             .call(move |db| sessions::delete(db, &id_hash))
             .await?;
     }
-    let cookie = session_cookie_header(state.settings().scheme(), "", 0)?;
+    let cookie = session_cookie_header(secure_cookie(&state, &headers), "", 0)?;
     Ok((StatusCode::NO_CONTENT, [(header::SET_COOKIE, cookie)]).into_response())
 }
 
 /// Creates a session for `token` and returns its [`Session`] body.
 ///
-/// The response sets the session cookie only when `set_cookie` is true, which callers use for console requests.
+/// The response sets the session cookie only when `cookie` has the request headers, which callers give for console requests.
+/// The headers decide the `Secure` flag on the admin listener.
 ///
 /// # Errors
 ///
@@ -104,7 +102,7 @@ pub async fn logout(
 pub async fn start(
     state: &AppState,
     token: &Token,
-    set_cookie: bool,
+    cookie: Option<&HeaderMap>,
 ) -> Result<Response, ApiError> {
     let mut id = [0_u8; ID_BYTES];
     getrandom::fill(&mut id).map_err(ApiError::Random)?;
@@ -120,10 +118,11 @@ pub async fn start(
         })
         .await?;
     let body = Json(Session { expires_at });
-    if !set_cookie {
+    let Some(headers) = cookie else {
         return Ok(body.into_response());
-    }
-    let cookie = session_cookie_header(state.settings().scheme(), &id, SESSION_SECONDS)?;
+    };
+    let secure = secure_cookie(state, headers);
+    let cookie = session_cookie_header(secure, &id, SESSION_SECONDS)?;
     Ok(([(header::SET_COOKIE, cookie)], body).into_response())
 }
 
@@ -142,23 +141,41 @@ impl FromRequestParts<AppState> for ConsoleHost {
             .token()
             .cloned()
             .ok_or(ApiError::NeedsSetup)?;
-        let Some(host) = console_host(&parts.headers, &parts.uri, state).await? else {
+        let Some(console) = console(&parts.headers, &parts.uri, state).await? else {
             return Err(ApiError::NotFound(
                 "sessions are available only on the console host".to_owned(),
             ));
         };
-        Ok(Self { token, host })
+        Ok(Self { token, console })
     }
 }
 
+/// Returns `true` when the session cookie needs the `Secure` flag.
+///
+/// On the admin listener, plain HTTP is permitted, so only `X-Forwarded-Proto: https` from a TLS proxy sets the flag.
+/// On the single listener, the scheme setting decides.
+fn secure_cookie(state: &AppState, headers: &HeaderMap) -> bool {
+    let settings = state.settings();
+    if !settings.admin_listener() {
+        return settings.scheme() == Scheme::Https;
+    }
+    headers
+        .get(FORWARDED_PROTO)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(',').next())
+        .is_some_and(|proto| proto.trim().eq_ignore_ascii_case("https"))
+}
+
+const FORWARDED_PROTO: &str = "x-forwarded-proto";
+
 fn session_cookie_header(
-    scheme: Scheme,
+    secure: bool,
     value: &str,
     max_age: i64,
 ) -> Result<HeaderValue, InvalidHeaderValue> {
-    let secure = match scheme {
-        Scheme::Https => "; Secure",
-        Scheme::Http => "",
+    let secure = match secure {
+        true => "; Secure",
+        false => "",
     };
     HeaderValue::try_from(format!(
         "{SESSION_COOKIE}={value}; HttpOnly; SameSite=Strict; Path=/; Max-Age={max_age}{secure}"

@@ -71,6 +71,7 @@ When `field` is set, `message` starts with the same path and a colon.
 | Request | Cause |
 | --- | --- |
 | `PUT /api/settings` | `CUHLUMN_CONSOLE_HOST` or `CUHLUMN_SCHEME` sets a field to a different value, with `field` set to that field |
+| `PUT /api/settings` | `CUHLUMN_ADMIN_ADDR` is set and `console_host` is not `null`, with `field` set to `console_host` |
 | `PUT /api/settings/token` | `CUHLUMN_TOKEN` is set |
 
 ## Internal errors

@@ -1,16 +1,20 @@
 //! Server that hosts many blogs, each on its own domain.
 
 use std::{
+    future::IntoFuture,
     net::{Ipv4Addr, SocketAddr},
     process::ExitCode,
 };
 
 use anyhow::Context;
 use cuhlumn_server::{
+    admin_router,
     config::{Config, Task},
-    healthcheck, router,
+    healthcheck, public_router, router,
     state::AppState,
 };
+use tokio::net::TcpListener;
+use tokio_util::sync::CancellationToken;
 use tracing_subscriber::{EnvFilter, filter::LevelFilter};
 
 #[tokio::main]
@@ -38,6 +42,10 @@ async fn main() -> anyhow::Result<ExitCode> {
 
 async fn serve(config: Config) -> anyhow::Result<()> {
     let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, config.port));
+    let admin_address = config.admin_addr;
+    if admin_address.is_some() && config.console_host.is_some() {
+        tracing::warn!("CUHLUMN_CONSOLE_HOST has no effect, because CUHLUMN_ADMIN_ADDR is set");
+    }
     let data = config.data.clone();
     let state = AppState::open(config)
         .await
@@ -45,21 +53,61 @@ async fn serve(config: Config) -> anyhow::Result<()> {
     if state.settings().needs_setup() {
         tracing::warn!("the server has no admin token yet, open the console to set the token");
     }
-    let listener = tokio::net::TcpListener::bind(address)
-        .await
-        .with_context(|| format!("cannot listen on {address}"))?;
+    let listener = bind(address, "PORT").await?;
+    let Some(admin_address) = admin_address else {
+        tracing::info!(
+            %address,
+            data = %data.display(),
+            version = env!("CARGO_PKG_VERSION"),
+            "cuhlumn-server is listening"
+        );
+        axum::serve(listener, router(state))
+            .with_graceful_shutdown(shutdown())
+            .await
+            .context("the server stopped with an error")?;
+        tracing::info!("cuhlumn-server stopped");
+        return Ok(());
+    };
+    let admin_listener = bind(admin_address, "CUHLUMN_ADMIN_ADDR").await?;
     tracing::info!(
         %address,
+        %admin_address,
         data = %data.display(),
         version = env!("CARGO_PKG_VERSION"),
-        "cuhlumn-server is listening"
+        "cuhlumn-server is listening, the blogs on the public address and the console on the admin address"
     );
-    axum::serve(listener, router(state))
-        .with_graceful_shutdown(shutdown())
-        .await
-        .context("the server stopped with an error")?;
+    serve_both(state, listener, admin_listener).await?;
     tracing::info!("cuhlumn-server stopped");
     Ok(())
+}
+
+/// Serves the public and the admin listener until one shutdown signal stops both.
+async fn serve_both(
+    state: AppState,
+    public: TcpListener,
+    admin: TcpListener,
+) -> anyhow::Result<()> {
+    let stop = CancellationToken::new();
+    let signal = stop.clone();
+    tokio::spawn(async move {
+        shutdown().await;
+        signal.cancel();
+    });
+    let blogs = axum::serve(public, public_router(state.clone()))
+        .with_graceful_shutdown(stop.clone().cancelled_owned())
+        .into_future();
+    let console = axum::serve(admin, admin_router(state))
+        .with_graceful_shutdown(stop.cancelled_owned())
+        .into_future();
+    tokio::try_join!(blogs, console).context("the server stopped with an error")?;
+    Ok(())
+}
+
+/// Binds `address`. An error names the address and the `variable` that sets it.
+async fn bind(address: SocketAddr, variable: &str) -> anyhow::Result<TcpListener> {
+    TcpListener::bind(address)
+        .await
+        .with_context(|| format!("cannot listen on {address}, which {variable} sets"))
 }
 
 /// Waits for Ctrl-C or, on Unix, SIGTERM, so the requests in flight can finish.

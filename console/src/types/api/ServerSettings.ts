@@ -12,6 +12,10 @@ export type ServerSettings = {
  */
 console_host: Host | null, scheme: Scheme, 
 /**
+ * `CUHLUMN_ADMIN_ADDR` is set, so the console and the admin API are only on the admin port.
+ */
+admin_listener: boolean, 
+/**
  * The fields that environment variables set.
  */
 locked: Locked, };

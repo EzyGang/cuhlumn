@@ -6,7 +6,8 @@ Run `cuhlumn-server --help` to see the flags.
 
 | Variable | Flag | Default | Meaning |
 | --- | --- | --- | --- |
-| `PORT` | `--port` | `8080` | The port on `0.0.0.0` |
+| `PORT` | `--port` | `8080` | The port on `0.0.0.0` for the blogs |
+| `CUHLUMN_ADMIN_ADDR` | `--admin-addr` | None | Optional address of the admin listener, such as `0.0.0.0:8081` |
 | `CUHLUMN_DATA` | `--data` | `./data` | The folder for `cuhlumn.db`, `media/`, and `fonts/` |
 | `CUHLUMN_TOKEN` | `--token` | None | Optional override of the admin token, at least 32 bytes |
 | `CUHLUMN_CONSOLE_HOST` | `--console-host` | None | Optional override of the console domain |
@@ -14,6 +15,7 @@ Run `cuhlumn-server --help` to see the flags.
 | `RUST_LOG` | None | `info` | The log filter, for example `cuhlumn_server=debug` |
 
 The Docker image sets `CUHLUMN_DATA=/data`.
+An empty variable counts as not set.
 
 ## Server settings and overrides
 
@@ -46,11 +48,40 @@ When no console domain is set, every domain that is not a blog domain or an alia
 This includes the IP address of the server.
 A blog domain or alias cannot be the same as the console domain.
 
+## Admin listener
+
+`CUHLUMN_ADMIN_ADDR` starts a second listener for the console and the admin API.
+The value is a socket address with a port, such as `0.0.0.0:8081` or `100.92.3.4:8081`.
+
+| Listener | Serves |
+| --- | --- |
+| `PORT` | The blogs and `GET /api/health`. Every other `/api` path returns `404` with the code `not_found`. |
+| `CUHLUMN_ADMIN_ADDR` | The full `/api` and the console for every other path, on every host name |
+
+- The public port never serves the console, also before the setup.
+- The console domain setting has no effect. The console shows the field as locked, and `GET /api/settings` reports `admin_listener: true`.
+- A blog domain or alias can be any name, because no domain serves the console.
+- The scheme setting still controls the addresses of the blogs.
+- The health check of the Docker image uses `PORT`, so it works with both setups.
+
+Use the admin listener on a private network, such as NetBird or another WireGuard network.
+See [Private admin port](../getting-started/installation.md#private-admin-port).
+Do not expose the admin port to the public internet.
+
+### HTTP and HTTPS on the admin port
+
+The admin port works with HTTPS and without HTTPS.
+
+- HTTPS is supported and recommended when the network does not encrypt traffic. Put a TLS proxy in front of the admin port that sets `X-Forwarded-Proto: https`. The session cookie then gets `Secure`.
+- Plain HTTP also works. This is acceptable on a private network that encrypts traffic itself, such as NetBird or another WireGuard network.
+- On plain HTTP, browsers block the clipboard API. The token **Copy** buttons then select the token, and the media library shows the address in a message, so you can copy it by hand.
+- The session cookie gets `Secure` only when the request has `X-Forwarded-Proto: https`.
+
 ## Scheme
 
 The scheme setting does not turn on TLS.
 It tells the server which scheme the readers use, so the addresses in pages, feeds, and API answers are correct.
-It also sets the `Secure` flag of the session cookie.
+Without an admin listener, it also sets the `Secure` flag of the session cookie.
 Use `http` only for local work.
 A change of the scheme clears the page cache.
 
@@ -63,6 +94,9 @@ An invalid `RUST_LOG` value stops the server at startup.
 
 At startup the server creates the data folder, opens the database, applies new migrations, and deletes expired sessions.
 On Ctrl-C, or SIGTERM on Unix, the server stops accepting connections and finishes the requests in progress.
+The startup log shows the address of each listener.
+With an admin listener, one shutdown signal stops both listeners.
+When the server cannot listen on an address, the error names the address and the variable that sets it.
 
 ## Local development
 
