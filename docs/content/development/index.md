@@ -119,7 +119,8 @@ The workflow runs these jobs in sequence:
 | `prepare` | Writes the version to `Cargo.toml`, `console/package.json`, `Cargo.lock`, and the health examples in the docs, then commits, tags, and pushes |
 | `build` | Builds the image for `linux/amd64` and `linux/arm64` and pushes it by digest |
 | `smoke` | Starts the `amd64` image with Compose, checks the health answer, creates a site, and publishes a post |
-| `publish` | Pushes the multi-platform tags and creates the GitHub release |
+| `binaries` | Builds the `cuhlumn` CLI for Linux, macOS, and Windows on x86_64 and arm64, and checks that each native binary reports the new version |
+| `publish` | Pushes the multi-platform tags, then creates the GitHub release with the CLI archives and a `SHA256SUMS` file |
 
 A version with a pre-release part, such as `1.4.0-rc.1`, gets only its own tag.
 Other versions also get the tags `MAJOR.MINOR`, `MAJOR`, and `latest`.

@@ -1,0 +1,83 @@
+name: CLI binaries
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: The commit to build
+        required: true
+        type: string
+      version:
+        description: The version that the binary must report, without the "v" prefix
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  build:
+    name: build (${{ matrix.target }})
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-22.04-arm
+          - target: x86_64-apple-darwin
+            runner: macos-latest
+            cross: true
+          - target: aarch64-apple-darwin
+            runner: macos-latest
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+          - target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+    env:
+      TARGET: ${{ matrix.target }}
+      VERSION: ${{ inputs.version }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal --target "$TARGET" && rustup default stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: cli-${{ matrix.target }}
+      - name: Build the CLI
+        run: cargo build --release --locked -p cuhlumn-cli --target "$TARGET"
+      - name: Check the binary
+        if: ${{ !matrix.cross }}
+        run: |
+          output="$("target/$TARGET/release/cuhlumn" --version)"
+          echo "$output"
+          [ "$output" = "cuhlumn $VERSION" ]
+      - name: Package the archive
+        run: |
+          name="cuhlumn-$TARGET"
+          mkdir -p "dist/$name"
+          cp LICENSE README.md "dist/$name/"
+          if [[ "$TARGET" == *windows* ]]; then
+            cp "target/$TARGET/release/cuhlumn.exe" "dist/$name/"
+            (cd dist && 7z a -tzip "$name.zip" "$name" > /dev/null)
+          else
+            cp "target/$TARGET/release/cuhlumn" "dist/$name/"
+            tar -C dist -czf "dist/$name.tar.gz" "$name"
+          fi
+          rm -r "dist/$name"
+          ls -l dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cli-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1

@@ -6,12 +6,29 @@ Every command prints JSON, so scripts and agents can read the result.
 
 ## Installation
 
-Build the client from a checkout of the repository:
+Each [GitHub release](https://github.com/EzyGang/cuhlumn/releases/latest) has a `cuhlumn` archive for these targets:
+
+| System | Archive target |
+| --- | --- |
+| Linux x86_64 | `x86_64-unknown-linux-gnu` |
+| Linux arm64 | `aarch64-unknown-linux-gnu` |
+| macOS Intel | `x86_64-apple-darwin` |
+| macOS Apple silicon | `aarch64-apple-darwin` |
+| Windows x86_64 | `x86_64-pc-windows-msvc` |
+| Windows arm64 | `aarch64-pc-windows-msvc` |
+
+The archive name is `cuhlumn-<target>.tar.gz`, or `cuhlumn-<target>.zip` for Windows.
+The `SHA256SUMS` file of the release contains the checksum of each archive.
+The Linux binaries need glibc 2.35 or later.
 
 ```sh
-cargo install --path crates/cli
+curl -fsSL https://github.com/EzyGang/cuhlumn/releases/latest/download/cuhlumn-aarch64-apple-darwin.tar.gz | tar -xz
+sudo install cuhlumn-aarch64-apple-darwin/cuhlumn /usr/local/bin/
 ```
 
+On Windows, download `cuhlumn-x86_64-pc-windows-msvc.zip`, extract it, and put `cuhlumn.exe` in a folder on your `PATH`.
+
+To build the client from a checkout of the repository, run `cargo install --path crates/cli`.
 The command installs the `cuhlumn` binary in `~/.cargo/bin`.
 
 ## Settings
