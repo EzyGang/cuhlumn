@@ -1,4 +1,6 @@
 import type { JSX } from "preact";
+import { X } from "lucide-preact";
+import { Button } from "../../../shared/ui/Button.view";
 import { TextField } from "../../../shared/ui/TextField.view";
 import type { ImageFieldModel, MediaPickerModel } from "../../../../types/siteSettings";
 import { MediaPickerDialog } from "./MediaPickerDialog.view";
@@ -24,9 +26,15 @@ export const ImageField = ({ field, picker }: ImageFieldProps): JSX.Element => (
       value={field.value}
       onValueChange={field.setValue}
       error={field.error}
+      readOnly={field.pending}
       placeholder="https:// or /media/…"
       class="flex-1"
     />
+    {field.pending ? (
+      <Button label={field.removeText} onClick={field.removePending}>
+        <X size={14} aria-hidden="true" />
+      </Button>
+    ) : null}
     <MediaPickerDialog label={field.label} name={field.name} picker={picker} />
   </div>
 );

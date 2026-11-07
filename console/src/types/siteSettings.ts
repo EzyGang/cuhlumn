@@ -148,9 +148,22 @@ export interface MediaPickerModel {
   items: MediaChoice[];
   loading: boolean;
   error: string | null;
-  available: boolean;
+  /** True when the dialog lists the media library. Only a saved site has a library. */
+  library: boolean;
+  uploading: boolean;
+  accept: string;
   setOpen: Record<ImageKey, (open: boolean) => void>;
+  upload: (event: Event) => void;
 }
+
+/** An image file that uploads when the admin creates the site. */
+export interface PendingImage {
+  file: File;
+  /** A `data:` address that shows the file before the upload, or null until the browser reads it. */
+  preview: string | null;
+}
+
+export type PendingImages = Partial<Record<ImageKey, PendingImage>>;
 
 export interface ImageFieldModel {
   name: ImageKey;
@@ -158,5 +171,9 @@ export interface ImageFieldModel {
   value: string;
   thumbnail: string | null;
   error: string | undefined;
+  /** True when the field holds a file that uploads when the admin creates the site. */
+  pending: boolean;
+  removeText: string;
   setValue: (value: string) => void;
+  removePending: () => void;
 }

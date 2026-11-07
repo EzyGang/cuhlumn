@@ -17,11 +17,7 @@ export const MediaChoicesView = ({ items, loading, error }: MediaChoicesProps): 
     );
   }
   if (items.length === 0) {
-    return (
-      <p class="text-sm text-secondary">
-        There are no images yet. Upload images on the Media screen.
-      </p>
-    );
+    return <p class="text-sm text-secondary">There are no images in the media library yet.</p>;
   }
   return (
     <ul class="grid grid-cols-2 gap-3 sm:grid-cols-4">

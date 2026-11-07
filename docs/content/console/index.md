@@ -116,8 +116,14 @@ See [Announcements](../platform/announcements.md).
 | Share image | Generated card, **Date and reading time** |
 | Page extras | Head HTML, footer, credit |
 
-**Pick from media** next to the logo, favicon, and share image fields opens the media library.
-The selected image goes into the field as `/media/{name}`.
+**Choose image** next to the logo, favicon, and share image fields opens a dialog.
+
+- **Upload an image** uploads a PNG, JPEG, WebP, GIF, or AVIF file to the media library and puts it into the field.
+- On a saved site, the dialog also lists the media library. Select an image to put it into the field.
+- On a new site, the file uploads when you create the site. The field shows the file name until then.
+
+The field gets the image as `/media/{name}`.
+If an upload fails during the create, the site exists, and the field of that image stays empty.
 See [Appearance](../platform/appearance.md).
 
 ## Editor
