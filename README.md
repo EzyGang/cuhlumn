@@ -132,7 +132,15 @@ The release binary embeds the console, so build the console first.
 
 ### CLI
 
-Install the `cuhlumn` command-line client:
+Download the `cuhlumn` command-line client for your system from the [latest release](https://github.com/EzyGang/cuhlumn/releases/latest).
+Each release has archives for Linux, macOS, and Windows on x86_64 and arm64, and a `SHA256SUMS` file.
+
+```bash
+curl -fsSL https://github.com/EzyGang/cuhlumn/releases/latest/download/cuhlumn-x86_64-unknown-linux-gnu.tar.gz | tar -xz
+sudo install cuhlumn-x86_64-unknown-linux-gnu/cuhlumn /usr/local/bin/
+```
+
+You can also build it with Cargo:
 
 ```bash
 cargo install --git https://github.com/EzyGang/cuhlumn --locked cuhlumn-cli

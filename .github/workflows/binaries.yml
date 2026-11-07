@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       version:
-        description: The version in the archive names, without the "v" prefix
+        description: The version that the binary must report, without the "v" prefix
         required: true
         type: string
 
@@ -63,7 +63,7 @@ jobs:
           [ "$output" = "cuhlumn $VERSION" ]
       - name: Package the archive
         run: |
-          name="cuhlumn-$VERSION-$TARGET"
+          name="cuhlumn-$TARGET"
           mkdir -p "dist/$name"
           cp LICENSE README.md "dist/$name/"
           if [[ "$TARGET" == *windows* ]]; then
