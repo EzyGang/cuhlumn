@@ -1,7 +1,8 @@
-# Cuhlumn
-
 <p align="center">
-  <img src="assets/logo.png" width="160" alt="Cuhlumn: an orange cat">
+  <picture>
+    <source media="(max-width: 600px)" srcset="assets/logo-square.png">
+    <img src="assets/logo-wide.png" width="640" alt="Cuhlumn: a grumpy grey cat. Blogs, cuh.">
+  </picture>
 </p>
 
 <p align="center">
