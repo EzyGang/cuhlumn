@@ -9,7 +9,6 @@ interface DialogProps {
   trigger: ComponentChildren;
   title: string;
   children: ComponentChildren;
-  triggerDisabled?: boolean;
 }
 
 export const Dialog = ({
@@ -18,12 +17,9 @@ export const Dialog = ({
   trigger,
   title,
   children,
-  triggerDisabled = false,
 }: DialogProps): JSX.Element => (
   <BaseDialog.Root open={open} onOpenChange={onOpenChange}>
-    <BaseDialog.Trigger disabled={triggerDisabled} className={buttonClasses("secondary")}>
-      {trigger}
-    </BaseDialog.Trigger>
+    <BaseDialog.Trigger className={buttonClasses("secondary")}>{trigger}</BaseDialog.Trigger>
     <BaseDialog.Portal>
       <BaseDialog.Backdrop className="fixed inset-0 z-40 bg-background/70" />
       <BaseDialog.Popup className="fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-4rem)] w-3xl max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-5 overflow-hidden border border-border bg-card p-5">

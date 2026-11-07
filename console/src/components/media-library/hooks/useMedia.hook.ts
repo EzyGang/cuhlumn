@@ -7,12 +7,12 @@ import { deleteMedia, listMedia, uploadMedia } from "../../../services/media.ser
 import type { MediaItem } from "../../../types/api/MediaItem";
 import type { MediaModel, MediaTile } from "../../../types/media";
 import { formatBytes, formatDateTime } from "../../../utils/format";
+import { MEDIA_ACCEPT } from "../../../utils/media";
 import { reportApiError } from "../../../utils/reportApiError";
 import { showToast } from "../../shared/ui/Toast.view";
 
 type Library = Loaded<MediaItem[]>;
 
-const ACCEPT = "image/png,image/jpeg,image/webp,image/gif,image/avif";
 const DROP_TEXT = "Drop PNG, JPEG, WebP, GIF, or AVIF images here, up to 16 MiB each.";
 
 const copyAddress = async (url: string): Promise<void> => {
@@ -111,7 +111,7 @@ export const useMedia = (): MediaModel => {
       tiles: (library.value ?? []).map((item) => toTile(host, item, library)),
       dragging: upload.dragging,
       dropText: upload.uploading ? "Uploading" : DROP_TEXT,
-      accept: ACCEPT,
+      accept: MEDIA_ACCEPT,
     },
     status: {
       load: { status: library.status, error: library.error, retry: library.retry },

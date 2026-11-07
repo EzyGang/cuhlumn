@@ -12,6 +12,7 @@ interface TextFieldProps {
   placeholder?: string | undefined;
   type?: "text" | "url" | "datetime-local" | undefined;
   disabled?: boolean | undefined;
+  readOnly?: boolean | undefined;
   multiline?: number | undefined;
   mono?: boolean | undefined;
   class?: string | undefined;
