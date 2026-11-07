@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  # The workflow name keeps a release run apart from the push run on the same branch.
+  group: ci-${{ github.ref }}-${{ github.workflow }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust-lint:
+    name: rust-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal --component rustfmt,clippy && rustup default stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Check the format
+        run: cargo fmt --all --check
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - name: Export the TypeScript types
+        run: cargo test -p cuhlumn-api --features ts --test ts_export --locked
+      - name: Check that the TypeScript types are current
+        run: |
+          git diff --exit-code -- console/src/types/api
+          untracked="$(git ls-files --others --exclude-standard -- console/src/types/api)"
+          if [ -n "$untracked" ]; then
+            echo "::error::These generated types are not in Git:"
+            echo "$untracked"
+            exit 1
+          fi
+
+  rust-test:
+    name: rust-test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install the Rust toolchain
+        run: rustup toolchain install stable --profile minimal && rustup default stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Run the tests
+        run: cargo test --workspace --all-features --locked
+
+  console:
+    name: console
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install the dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint and type-check
+        run: pnpm validate
+      - name: Check the format
+        run: pnpm format:check
+      - name: Run the tests
+        run: pnpm test
+
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          cache-dependency-glob: docs/uv.lock
+      - name: Install the dependencies
+        run: uv sync --locked --group dev
+      - name: Build the documentation
+        run: uv run zensical build

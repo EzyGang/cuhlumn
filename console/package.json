@@ -13,6 +13,7 @@
     "validate": "pnpm run lint && pnpm run type-check",
     "test": "vitest run",
     "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "fix": "oxlint --fix --deny-warnings src vite.config.ts && pnpm run format && pnpm run type-check"
   },
   "dependencies": {
