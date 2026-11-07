@@ -1,16 +1,21 @@
 import { createContext } from "preact";
 import type { ComponentChildren, JSX } from "preact";
 import { useContext } from "preact/hooks";
-import type { Font } from "../../../types/api/Font";
 import type { ChipInputModel } from "../../../types/chips";
-import type { SelectItem } from "../../../types/select";
 import type { LoadState } from "../../../types/load";
 import type {
+  AnnouncementActions,
+  AnnouncementModel,
+  AppearanceOptions,
+  AppearanceSetters,
   ImageFieldModel,
+  ImageKey,
   LinkRowModel,
   MediaPickerModel,
+  SiteFlagKey,
   SiteForm,
   SiteTextKey,
+  SocialModel,
 } from "../../../types/siteSettings";
 import type { FieldErrors } from "../../../utils/fieldErrors";
 
@@ -24,17 +29,21 @@ export interface SiteSettingsContextValue {
     links: LinkRowModel[];
     picker: MediaPickerModel;
     colorValue: string;
-    fonts: readonly SelectItem<Font>[];
-    imageFields: ImageFieldModel[];
+    options: AppearanceOptions;
+    images: Record<ImageKey, ImageFieldModel>;
     linksTitle: string;
     canAddLink: boolean;
+    social: SocialModel;
+    announcement: AnnouncementModel;
   };
   status: { load: LoadState; saving: boolean };
   actions: {
     text: Record<SiteTextKey, (value: string) => void>;
-    setFont: (font: Font) => void;
-    setCredit: (credit: boolean) => void;
+    toggle: Record<SiteFlagKey, (value: boolean) => void>;
+    choose: AppearanceSetters;
     addLink: () => void;
+    addSocial: () => void;
+    announcement: AnnouncementActions;
     save: (event: Event) => void;
     remove: () => void;
   };

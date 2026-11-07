@@ -4,7 +4,8 @@ use maud::html;
 
 use crate::render::{
     blog::{Blog, Entry},
-    layout::{page, post_list, trail},
+    layout::{page, trail},
+    listing,
     markdown::slugify,
     meta::Head,
     schema,
@@ -34,7 +35,7 @@ pub fn render(blog: &Blog, slug: &str) -> Option<String> {
     let body = html! {
         (trail(blog))
         h1 { "#" (name) }
-        (post_list(&posts, false))
+        (listing::posts(&posts, false, site.brand.home_layout))
     };
     Some(page(blog, &head, body))
 }

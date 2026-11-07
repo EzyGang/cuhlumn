@@ -12,7 +12,13 @@ const DEBOUNCE_MS = 300;
 const renderPreview = async (host: string, body: string): Promise<PreviewState> => {
   try {
     const preview = await previewMarkdown(host, { body });
-    return { kind: "ready", html: preview.html, toc: preview.toc, wordCount: preview.word_count };
+    return {
+      kind: "ready",
+      html: preview.html,
+      css: preview.css,
+      toc: preview.toc,
+      wordCount: preview.word_count,
+    };
   } catch (error) {
     if (isUnauthorized(error)) {
       reportApiError(error);

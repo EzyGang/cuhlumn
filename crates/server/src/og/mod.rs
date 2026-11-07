@@ -1,12 +1,12 @@
-//! Share images: a 1200×630 PNG card for every post and site, drawn from SVG with the server fonts.
+//! Share images: a 1200×630 PNG card for every post and site, drawn from SVG with the system and library fonts.
 
 pub mod card;
 mod fit;
-mod fonts;
+pub mod fonts;
 mod logo;
 mod palette;
 
-use std::{error::Error, io, path::PathBuf, sync::Arc};
+use std::{error::Error, io, sync::Arc};
 
 use cuhlumn_api::site::Site;
 use resvg::{
@@ -52,19 +52,17 @@ pub enum OgError {
 pub struct PreparedCard {
     card: Card,
     logo: Option<ImageKind>,
-    fonts: Option<PathBuf>,
 }
 
-/// Reads the logo of `site` and lays out its share card.
+/// Reads the logo of `site` and lays out its share card in the card style of the site.
 ///
-/// `fonts` is the extra font folder from `CUHLUMN_FONTS`.
+/// The card shows the meta text only when the site brand turns it on.
 ///
 /// # Errors
 ///
 /// Returns [`OgError`] when the logo file exists but cannot be read.
 pub async fn prepare(
     media: &MediaStore,
-    fonts: Option<PathBuf>,
     site: &Site,
     text: CardText,
 ) -> Result<PreparedCard, OgError> {
@@ -74,11 +72,16 @@ pub async fn prepare(
         title: text.title,
         subtitle: text.subtitle,
         host: site.host.to_string(),
-        meta: text.meta,
+        meta: if site.brand.card_meta {
+            text.meta
+        } else {
+            String::new()
+        },
         accent: site.brand.accent.clone(),
+        style: site.brand.card_style,
         logo: logo.is_some(),
     };
-    Ok(PreparedCard { card, logo, fonts })
+    Ok(PreparedCard { card, logo })
 }
 
 impl PreparedCard {
@@ -90,9 +93,9 @@ impl PreparedCard {
     ///
     /// Returns [`OgError`] when the SVG cannot be parsed, drawn, or encoded.
     pub fn draw(self) -> Result<Vec<u8>, OgError> {
-        let Self { card, logo, fonts } = self;
+        let Self { card, logo } = self;
         let options = usvg::Options {
-            fontdb: fonts::database(fonts.as_deref()),
+            fontdb: fonts::database(),
             image_href_resolver: ImageHrefResolver {
                 resolve_data: Box::new(|_, _, _| None),
                 resolve_string: Box::new(move |href, _| {

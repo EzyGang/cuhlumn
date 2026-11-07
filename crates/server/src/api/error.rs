@@ -12,7 +12,7 @@ use cuhlumn_api::{
     wire::{ErrorBody, ErrorCode, ErrorDetail},
 };
 
-use crate::{db::DbError, media::MediaError};
+use crate::{db::DbError, fonts::FontError, media::MediaError};
 
 /// A failed API request. Every variant becomes an [`ErrorBody`] response.
 #[derive(Debug, thiserror::Error)]
@@ -42,18 +42,34 @@ pub enum ApiError {
     /// The request conflicts with stored data.
     #[error("{0}")]
     Conflict(String),
+    /// The value of `field` conflicts with stored data.
+    #[error("{message}")]
+    FieldConflict {
+        /// The JSON path of the field.
+        field: String,
+        message: String,
+    },
     /// The body is larger than the limit of the route.
     #[error("the request body is too large")]
     PayloadTooLarge,
     /// The content type is not supported or does not match the body.
     #[error("{0}")]
     UnsupportedMediaType(String),
-    /// The server has no admin token.
-    #[error("the admin API is off until the server has CUHLUMN_TOKEN")]
-    ApiDisabled,
+    /// The server has no admin token yet.
+    #[error("the server has no admin token yet")]
+    NeedsSetup,
+    /// An environment variable sets the value of `field`.
+    #[error("an environment variable sets this value")]
+    Locked {
+        /// The JSON path of the locked field.
+        field: String,
+    },
     /// The database failed.
     #[error(transparent)]
     Database(#[from] DbError),
+    /// The font library failed.
+    #[error(transparent)]
+    Fonts(FontError),
     /// The media storage failed.
     #[error(transparent)]
     Media(#[from] MediaError),
@@ -94,19 +110,36 @@ impl ApiError {
             Self::Forbidden => (StatusCode::FORBIDDEN, ErrorCode::Forbidden),
             Self::NotFound(_) => (StatusCode::NOT_FOUND, ErrorCode::NotFound),
             Self::MethodNotAllowed => (StatusCode::METHOD_NOT_ALLOWED, ErrorCode::MethodNotAllowed),
-            Self::Conflict(_) => (StatusCode::CONFLICT, ErrorCode::Conflict),
+            Self::Conflict(_) | Self::FieldConflict { .. } => {
+                (StatusCode::CONFLICT, ErrorCode::Conflict)
+            }
             Self::PayloadTooLarge => (StatusCode::PAYLOAD_TOO_LARGE, ErrorCode::PayloadTooLarge),
             Self::UnsupportedMediaType(_) => (
                 StatusCode::UNSUPPORTED_MEDIA_TYPE,
                 ErrorCode::UnsupportedMediaType,
             ),
-            Self::ApiDisabled => (StatusCode::SERVICE_UNAVAILABLE, ErrorCode::ApiDisabled),
+            Self::NeedsSetup => (StatusCode::SERVICE_UNAVAILABLE, ErrorCode::NeedsSetup),
+            Self::Locked { .. } => (StatusCode::CONFLICT, ErrorCode::Locked),
             Self::Database(_)
+            | Self::Fonts(_)
             | Self::Media(_)
             | Self::Random(_)
             | Self::Header(_)
             | Self::Key(_)
             | Self::Task(_) => (StatusCode::INTERNAL_SERVER_ERROR, ErrorCode::Internal),
+        }
+    }
+}
+
+impl From<FontError> for ApiError {
+    fn from(err: FontError) -> Self {
+        match err {
+            FontError::NotAFont(_) => Self::validation("file", err),
+            FontError::TooLarge => Self::PayloadTooLarge,
+            FontError::Url(_) | FontError::Upstream(_) | FontError::NoFiles => {
+                Self::validation("url", err)
+            }
+            FontError::Http(_) | FontError::Io { .. } | FontError::Task(_) => Self::Fonts(err),
         }
     }
 }
@@ -123,6 +156,7 @@ impl IntoResponse for ApiError {
         };
         let field = match self {
             Self::Validation { field, .. } => field,
+            Self::Locked { field } | Self::FieldConflict { field, .. } => Some(field),
             _ => None,
         };
         let body = ErrorBody {

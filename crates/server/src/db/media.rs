@@ -1,10 +1,9 @@
 //! Media record queries.
 
-use cuhlumn_api::{site::host::Host, wire::MediaItem};
+use cuhlumn_api::{settings::Scheme, site::host::Host, wire::MediaItem};
 use rusqlite::{Connection, Row, params};
 
 use crate::{
-    config::Scheme,
     db::{DbError, conversion, parse},
     media::{format::ImageFormat, name::MediaName},
 };

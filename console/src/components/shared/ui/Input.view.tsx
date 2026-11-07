@@ -4,7 +4,7 @@ import { Input as BaseInput } from "@base-ui/react/input";
 interface InputProps {
   value: string;
   onValueChange: (value: string) => void;
-  type?: "text" | "password" | "url" | "search" | "color" | undefined;
+  type?: "text" | "password" | "url" | "search" | "color" | "datetime-local" | undefined;
   placeholder?: string | undefined;
   autoComplete?: string | undefined;
   disabled?: boolean | undefined;

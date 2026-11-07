@@ -1,12 +1,16 @@
 //! Sites, posts, media records, and sessions in one SQLite file.
 
+pub mod fonts;
 pub mod media;
 mod migrations;
 pub mod posts;
 pub mod sessions;
+pub mod settings;
 pub mod sites;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_settings;
 
 use std::{
     path::Path,

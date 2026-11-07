@@ -1,6 +1,6 @@
 use serde_json::{Value, json};
 
-use crate::site::{Brand, Font, SiteInput};
+use crate::site::{SiteInput, brand::Brand, theme::Font};
 
 fn parse(value: Value) -> Result<SiteInput, serde_json::Error> {
     serde_json::from_value(value)
@@ -83,4 +83,24 @@ fn font_parses_from_text() {
     assert_eq!("sans".parse::<Font>(), Ok(Font::Sans));
     assert!("comic".parse::<Font>().is_err());
     assert_eq!(Font::Serif.to_string(), "serif");
+}
+
+#[test]
+fn indexnow_defaults_on_and_announcement_off() {
+    let input = parse(json!({"title": "Harbor Notes"})).unwrap();
+    assert!(input.indexnow);
+    assert_eq!(input.announcement, None);
+    let input = parse(json!({"title": "x", "indexnow": false})).unwrap();
+    assert!(!input.indexnow);
+}
+
+#[test]
+fn social_links_are_limited_and_unique() {
+    let link = json!({"network": "github", "url": "https://github.com/maralind"});
+    assert!(parse(json!({"title": "x", "brand": {"social": [link]}})).is_ok());
+    assert!(parse(json!({"title": "x", "brand": {"social": [link, link]}})).is_err());
+    let many: Vec<Value> = (0..13)
+        .map(|index| json!({"network": "github", "url": format!("https://github.com/u{index}")}))
+        .collect();
+    assert!(parse(json!({"title": "x", "brand": {"social": many}})).is_err());
 }

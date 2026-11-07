@@ -13,7 +13,8 @@ use std::{
 };
 
 use cuhlumn_server::{
-    config::{Config, Scheme, Switch, Token},
+    config::{Config, Token},
+    indexnow::IndexNow,
     router,
     state::AppState,
 };
@@ -48,12 +49,14 @@ impl Server {
             port: 0,
             data: data.path().to_owned(),
             token: Some(Token::new(TOKEN).unwrap()),
-            scheme: Scheme::Https,
             console_host: None,
-            indexnow: Switch::Off,
-            fonts: None,
+            scheme: None,
+            command: None,
         };
-        let state = runtime.block_on(AppState::open(config)).unwrap();
+        let indexnow = IndexNow::with_endpoint("http://127.0.0.1:9/indexnow".to_owned()).unwrap();
+        let state = runtime
+            .block_on(AppState::open_with(config, indexnow))
+            .unwrap();
         let listener = runtime.block_on(TcpListener::bind("127.0.0.1:0")).unwrap();
         let address = listener.local_addr().unwrap();
         runtime.spawn(async move { axum::serve(listener, router(state)).await });
@@ -318,4 +321,90 @@ fn files_resolve_relative_to_the_working_folder() {
     server.write("posts/hello.md", post_file("").as_bytes());
     let saved = server.json(&["post", "push", "posts/hello.md"]);
     assert_eq!(saved["post"]["slug"], json!("hello"));
+}
+
+#[test]
+fn announce_set_show_and_clear() {
+    let server = Server::start();
+    server.create_site();
+    assert_eq!(
+        server.json(&["announce", "show"]),
+        json!({"status": "off", "announcement": null})
+    );
+
+    let set = server.json(&[
+        "announce",
+        "set",
+        "  Maintenance on Sunday.  ",
+        "--link",
+        "https://harbor.example.com/maintenance",
+        "--label",
+        "Details",
+        "--tone",
+        "warning",
+        "--from",
+        "2026-01-01T10:00:00+02:00",
+        "--until",
+        "4102444800",
+        "--no-dismiss",
+    ]);
+    let expected = json!({
+        "status": "live",
+        "announcement": {
+            "text": "Maintenance on Sunday.",
+            "link": "https://harbor.example.com/maintenance",
+            "link_label": "Details",
+            "tone": "warning",
+            "starts_at": 1_767_254_400,
+            "ends_at": 4_102_444_800_i64,
+            "dismissible": false,
+        },
+    });
+    assert_eq!(set, expected);
+    assert_eq!(server.json(&["announce", "show"]), expected);
+    assert_eq!(
+        server.json(&["site", "get"])["announcement"],
+        expected["announcement"]
+    );
+
+    let scheduled = server.json(&["announce", "set", "Soon.", "--from", "4102444800"]);
+    assert_eq!(scheduled["status"], json!("scheduled"));
+    assert_eq!(scheduled["announcement"]["link_label"], json!("Learn more"));
+    assert_eq!(scheduled["announcement"]["tone"], json!("info"));
+    assert_eq!(scheduled["announcement"]["dismissible"], json!(true));
+
+    let ended = server.json(&["announce", "set", "Done.", "--until", "1000"]);
+    assert_eq!(ended["status"], json!("ended"));
+
+    let cleared = server.json(&["announce", "clear"]);
+    assert_eq!(cleared, json!({"status": "off", "announcement": null}));
+    assert_eq!(server.json(&["site", "get"])["announcement"], json!(null));
+}
+
+#[test]
+fn announce_rejects_invalid_input() {
+    let server = Server::start();
+    server.create_site();
+
+    let time = server.run(&["announce", "set", "Hello.", "--from", "tomorrow"]);
+    assert_eq!(time.code, 2);
+    assert!(time.stderr.contains("RFC 3339"), "{}", time.stderr);
+
+    let order = server.run(&[
+        "announce",
+        "set",
+        "Hello.",
+        "--from",
+        "2026-11-10T09:00:00Z",
+        "--until",
+        "2026-11-09T09:00:00Z",
+    ]);
+    assert_eq!(order.code, 1);
+    assert!(order.stderr.contains("ends_at"), "{}", order.stderr);
+
+    let long = "x".repeat(161);
+    let text = server.run(&["announce", "set", &long]);
+    assert_eq!(text.code, 1);
+    assert!(text.stderr.contains("text"), "{}", text.stderr);
+    assert_eq!(server.json(&["site", "get"])["announcement"], json!(null));
 }

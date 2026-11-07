@@ -1,8 +1,12 @@
 import type { Signal } from "@preact/signals";
 import { useChipInput } from "../../../hooks/useChipInput.hook";
-import type { Font } from "../../../types/api/Font";
 import type { Link } from "../../../types/api/Link";
-import type { SiteForm, SiteTextKey } from "../../../types/siteSettings";
+import type {
+  SiteFlagKey,
+  SiteForm,
+  SiteFormUpdate,
+  SiteTextKey,
+} from "../../../types/siteSettings";
 import { ALIAS_RULES } from "../../../utils/chips";
 import { bindKeys } from "../../../utils/bindKeys";
 import { firstItemError, withoutFieldError } from "../../../utils/fieldErrors";
@@ -11,18 +15,19 @@ import { MAX_LINKS } from "../../../utils/siteForm";
 import type { SiteSettingsContextValue } from "../context/SiteSettingsContext";
 
 type FormState = Pick<SiteSettingsContextValue["data"], "aliases" | "aliasError" | "links">;
-type FormActions = Pick<
-  SiteSettingsContextValue["actions"],
-  "text" | "setFont" | "setCredit" | "addLink"
->;
+type FormActions = Pick<SiteSettingsContextValue["actions"], "text" | "toggle" | "addLink">;
 
-const BRAND_KEYS: Partial<Record<SiteTextKey, true>> = {
+const BRAND_KEYS: Partial<Record<SiteTextKey | SiteFlagKey, true>> = {
   accent: true,
   logo: true,
   favicon: true,
   og_image: true,
   head: true,
   footer: true,
+  credit: true,
+  theme_toggle: true,
+  social_in_header: true,
+  card_meta: true,
 };
 
 const TEXT_KEYS: readonly SiteTextKey[] = [
@@ -43,6 +48,14 @@ const TEXT_KEYS: readonly SiteTextKey[] = [
   "og_image",
   "head",
   "footer",
+];
+
+const FLAG_KEYS: readonly SiteFlagKey[] = [
+  "credit",
+  "theme_toggle",
+  "social_in_header",
+  "card_meta",
+  "indexnow",
 ];
 
 const linkRows = (
@@ -67,14 +80,13 @@ const linkRows = (
     };
   });
 
-type Update = (patch: Partial<SiteForm>, path: string) => void;
-
-const textPath = (key: SiteTextKey): string => (BRAND_KEYS[key] === true ? `brand.${key}` : key);
+const fieldPath = (key: SiteTextKey | SiteFlagKey): string =>
+  BRAND_KEYS[key] === true ? `brand.${key}` : key;
 
 const useAliasInput = (
   form: Signal<SiteForm>,
   errors: Signal<FieldErrors>,
-  update: Update,
+  update: SiteFormUpdate,
 ): Pick<FormState, "aliases" | "aliasError"> => {
   const [aliasIndex, aliasError] = firstItemError(errors.value, "aliases");
   const setAliases = (values: string[]): void => update({ aliases: values }, "aliases");
@@ -87,8 +99,8 @@ const useAliasInput = (
 export const useSiteFormState = (
   form: Signal<SiteForm>,
   errors: Signal<FieldErrors>,
-): FormState & { actions: FormActions } => {
-  const update: Update = (patch, path) => {
+): FormState & { update: SiteFormUpdate; actions: FormActions } => {
+  const update: SiteFormUpdate = (patch, path) => {
     form.value = { ...form.value, ...patch };
     errors.value = withoutFieldError(errors.value, path);
   };
@@ -96,12 +108,14 @@ export const useSiteFormState = (
   return {
     ...useAliasInput(form, errors, update),
     links: linkRows(form.value.links, errors.value, setLinks),
+    update,
     actions: {
       text: bindKeys(TEXT_KEYS, (key, value: string): void =>
-        update({ [key]: value }, textPath(key)),
+        update({ [key]: value }, fieldPath(key)),
       ),
-      setFont: (font: Font): void => update({ font }, "brand.font"),
-      setCredit: (credit: boolean): void => update({ credit }, "brand.credit"),
+      toggle: bindKeys(FLAG_KEYS, (key, value: boolean): void =>
+        update({ [key]: value }, fieldPath(key)),
+      ),
       addLink: (): void =>
         setLinks([...form.value.links, { label: "", url: "" }].slice(0, MAX_LINKS)),
     },

@@ -1,9 +1,10 @@
-//! Admin authentication: a bearer token on any host, or a console session cookie on the console host.
+//! Admin authentication: a bearer token on any host, or a console session cookie on a console host.
 
 use axum::{
     extract::FromRequestParts,
-    http::{HeaderMap, HeaderValue, header, request::Parts},
+    http::{HeaderMap, HeaderValue, Uri, header, request::Parts},
 };
+use cuhlumn_api::site::host::Host;
 
 use crate::{
     api::error::ApiError,
@@ -14,18 +15,31 @@ use crate::{
 
 /// Proof that the request has admin access.
 ///
-/// A cookie request with an unsafe method must also send an `Origin` header of the console host.
+/// A cookie request with an unsafe method must also send an `Origin` header of its own console host.
 #[derive(Clone, Copy, Debug)]
 pub struct Admin;
+
+/// The request host when it serves the console, else `None`.
+#[derive(Clone, Debug)]
+pub struct ConsoleRequest(pub Option<Host>);
 
 /// The name of the console session cookie.
 pub const SESSION_COOKIE: &str = "cuhlumn_session";
 
-/// Returns `true` when the request addresses the console host.
-#[must_use]
-pub fn is_console_request(parts: &Parts, state: &AppState) -> bool {
-    request_host(&parts.headers, &parts.uri)
-        .is_some_and(|host| state.config().is_console_host(&host))
+/// Returns the request host when it serves the console.
+///
+/// # Errors
+///
+/// Returns [`ApiError::Database`] when the site lookup fails.
+pub async fn console_host(
+    headers: &HeaderMap,
+    uri: &Uri,
+    state: &AppState,
+) -> Result<Option<Host>, ApiError> {
+    let Some(host) = request_host(headers, uri) else {
+        return Ok(None);
+    };
+    Ok(state.serves_console(&host).await?.then_some(host))
 }
 
 /// Returns the value of the session cookie.
@@ -42,17 +56,17 @@ pub fn session_cookie(headers: &HeaderMap) -> Option<&str> {
         })
 }
 
-/// Checks that the `Origin` header names the console host.
+/// Checks that the `Origin` header names `console`, the console host of the request.
 ///
 /// # Errors
 ///
 /// Returns [`ApiError::Forbidden`] when the header is missing or names another host.
-pub fn check_origin(headers: &HeaderMap, state: &AppState) -> Result<(), ApiError> {
+pub fn check_origin(headers: &HeaderMap, console: &Host) -> Result<(), ApiError> {
     let matches = headers
         .get(header::ORIGIN)
         .and_then(|value| value.to_str().ok())
         .and_then(origin_host)
-        .is_some_and(|host| state.config().is_console_host(&host));
+        .is_some_and(|host| host == *console);
     if !matches {
         return Err(ApiError::Forbidden);
     }
@@ -75,7 +89,8 @@ impl FromRequestParts<AppState> for Admin {
         parts: &mut Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        let token = state.config().token().ok_or(ApiError::ApiDisabled)?;
+        let settings = state.settings();
+        let token = settings.token().ok_or(ApiError::NeedsSetup)?;
         if let Some(Authorization::Bearer(candidate)) =
             parts.headers.get(header::AUTHORIZATION).map(authorization)
         {
@@ -87,11 +102,11 @@ impl FromRequestParts<AppState> for Admin {
         let Some(id) = session_cookie(&parts.headers) else {
             return Err(ApiError::Unauthorized);
         };
-        if !is_console_request(parts, state) {
+        let Some(console) = console_host(&parts.headers, &parts.uri, state).await? else {
             return Err(ApiError::Unauthorized);
-        }
+        };
         if !parts.method.is_safe() {
-            check_origin(&parts.headers, state)?;
+            check_origin(&parts.headers, &console)?;
         }
         let id_hash = token.session_hash(id);
         let session = state
@@ -99,6 +114,17 @@ impl FromRequestParts<AppState> for Admin {
             .call(move |db| sessions::find(db, &id_hash, unix_now()))
             .await?;
         session.map(|_| Self).ok_or(ApiError::Unauthorized)
+    }
+}
+
+impl FromRequestParts<AppState> for ConsoleRequest {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        Ok(Self(console_host(&parts.headers, &parts.uri, state).await?))
     }
 }
 

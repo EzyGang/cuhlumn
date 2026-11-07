@@ -1,11 +1,13 @@
 //! The page of one post or page.
 
+use cuhlumn_api::site::theme::HomeLayout;
 use maud::{Markup, PreEscaped, html};
 
 use crate::render::{
     blog::{Blog, Entry},
     day, iso,
-    layout::{page, post_list, trail},
+    layout::{page, trail},
+    listing,
     markdown::slugify,
     meta::{Head, OgType},
     schema,
@@ -117,5 +119,5 @@ fn more_posts(blog: &Blog, entry: &Entry) -> Markup {
     if related.is_empty() {
         return html! {};
     }
-    html! { section { h2.list-heading { "More posts" } (post_list(&related, true)) } }
+    html! { section { h2.list-heading { "More posts" } (listing::posts(&related, true, HomeLayout::List)) } }
 }

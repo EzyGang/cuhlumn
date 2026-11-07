@@ -22,7 +22,7 @@ export const PreviewPane = ({ preview }: PreviewPaneProps): JSX.Element => (
           title="Rendered post"
           sandbox=""
           srcdoc={preview.document}
-          class="min-h-[36rem] w-full flex-1 border border-border bg-surface"
+          class="min-h-[36rem] w-full flex-1 border border-border bg-surface [color-scheme:light_dark]"
         />
       )}
     </div>

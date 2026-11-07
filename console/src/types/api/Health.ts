@@ -7,4 +7,8 @@ export type Health = { ok: boolean,
 /**
  * The server version.
  */
-version: string, };
+version: string, 
+/**
+ * The server has no admin token yet, so the console must show the setup page.
+ */
+needs_setup: boolean, };

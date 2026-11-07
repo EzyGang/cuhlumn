@@ -12,4 +12,8 @@ html: string,
 /**
  * The table of contents.
  */
-toc: Array<TocEntry>, word_count: number, };
+toc: Array<TocEntry>, word_count: number, 
+/**
+ * The site stylesheet, so the preview matches the blog.
+ */
+css: string, };

@@ -4,7 +4,8 @@ use maud::{PreEscaped, html};
 
 use crate::render::{
     blog::{Blog, Entry},
-    layout::{page, post_list},
+    layout::page,
+    listing,
     meta::Head,
     schema,
 };
@@ -30,12 +31,12 @@ pub fn render(blog: &Blog) -> String {
         Some(entry) => html! {
             h1 { (entry.post.title) }
             div.post-body { (PreEscaped(&entry.doc().html)) }
-            @if !posts.is_empty() { h2.list-heading { "Latest posts" } (post_list(&posts, true)) }
+            @if !posts.is_empty() { h2.list-heading { "Latest posts" } (listing::posts(&posts, true, site.brand.home_layout)) }
         },
         None => html! {
             h1 { (site.title) }
             @if !site.description.is_empty() { p.intro { (site.description) } }
-            (post_list(&posts, false))
+            (listing::posts(&posts, false, site.brand.home_layout))
         },
     };
     page(blog, &head, body)

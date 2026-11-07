@@ -1,10 +1,6 @@
-//! Rendered responses in memory, with gzip and ETag, until the next write to their site.
+//! One rendered response with its gzip copy, ETag, and expiry.
 
-use std::{
-    collections::HashMap,
-    io::Write,
-    sync::{Arc, PoisonError, RwLock},
-};
+use std::io::Write;
 
 use axum::{
     body::Body,
@@ -12,18 +8,8 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use bytes::Bytes;
-use cuhlumn_api::site::host::Host;
 use flate2::{Compression, write::GzEncoder};
 use sha2::{Digest, Sha256};
-
-/// Rendered responses per canonical site host and request path.
-///
-/// Each host has a generation counter. A write to a site calls [`PageCache::invalidate`],
-/// which bumps the counter, so a response that was built before the write is never stored.
-#[derive(Debug, Default)]
-pub struct PageCache {
-    hosts: RwLock<HashMap<Host, HostPages>>,
-}
 
 /// One cached response.
 #[derive(Debug)]
@@ -33,56 +19,15 @@ pub struct Cached {
     gzip: Option<Bytes>,
     etag: String,
     max_age: u32,
-}
-
-#[derive(Debug, Default)]
-struct HostPages {
-    generation: u64,
-    pages: HashMap<String, Arc<Cached>>,
+    valid_until: Option<i64>,
 }
 
 const GZIP_MIN_LEN: usize = 1024;
 
-impl PageCache {
-    /// Returns the cached response for `path` on `host`.
-    #[must_use]
-    pub fn get(&self, host: &Host, path: &str) -> Option<Arc<Cached>> {
-        let hosts = self.hosts.read().unwrap_or_else(PoisonError::into_inner);
-        hosts.get(host)?.pages.get(path).cloned()
-    }
-
-    /// Returns the current generation of `host`. Read it before a build and pass it to [`PageCache::insert`].
-    #[must_use]
-    pub fn generation(&self, host: &Host) -> u64 {
-        let hosts = self.hosts.read().unwrap_or_else(PoisonError::into_inner);
-        hosts.get(host).map_or(0, |entry| entry.generation)
-    }
-
-    /// Stores a response that was built at `generation`.
-    ///
-    /// The response is dropped when a write changed the generation of `host` during the build.
-    pub fn insert(&self, host: &Host, path: String, generation: u64, cached: Arc<Cached>) {
-        let mut hosts = self.hosts.write().unwrap_or_else(PoisonError::into_inner);
-        let entry = hosts.entry(host.clone()).or_default();
-        if entry.generation != generation {
-            return;
-        }
-        entry.pages.insert(path, cached);
-    }
-
-    /// Drops every response of `host` and bumps its generation.
-    pub fn invalidate(&self, host: &Host) {
-        let mut hosts = self.hosts.write().unwrap_or_else(PoisonError::into_inner);
-        let entry = hosts.entry(host.clone()).or_default();
-        entry.generation += 1;
-        entry.pages.clear();
-    }
-}
-
 impl Cached {
     /// Prepares a response body with its ETag and, for text larger than 1024 bytes, a gzip copy.
     ///
-    /// PNG bodies are never compressed again.
+    /// PNG bodies are never compressed again. The response stays valid until the next write to its site.
     #[must_use]
     pub fn new<B>(content_type: &'static str, body: B, max_age: u32) -> Self
     where
@@ -100,7 +45,23 @@ impl Cached {
             gzip,
             etag,
             max_age,
+            valid_until: None,
         }
+    }
+
+    /// Sets the time, in unix seconds, from which the cache must not return the response.
+    ///
+    /// `None` keeps the response until the next write to its site.
+    #[must_use]
+    pub fn valid_until(mut self, valid_until: Option<i64>) -> Self {
+        self.valid_until = valid_until;
+        self
+    }
+
+    /// Returns `true` when the response is still valid at `now`, in unix seconds.
+    #[must_use]
+    pub fn is_valid_at(&self, now: i64) -> bool {
+        self.valid_until.is_none_or(|until| now < until)
     }
 
     /// Returns the ETag value with its quotes.
@@ -189,12 +150,9 @@ fn gzip(body: &[u8]) -> Option<Bytes> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
-    use cuhlumn_api::site::host::Host;
 
-    use crate::web::cache::{Cached, PageCache};
+    use crate::web::cache::cached::Cached;
 
     fn headers(name: header::HeaderName, value: &'static str) -> HeaderMap {
         let mut headers = HeaderMap::new();
@@ -261,20 +219,10 @@ mod tests {
     }
 
     #[test]
-    fn stale_generation_is_not_stored() {
-        let cache = PageCache::default();
-        let host = Host::new("blog.example.com").unwrap();
-        let generation = cache.generation(&host);
-        cache.invalidate(&host);
-        cache.insert(&host, "/".to_owned(), generation, Arc::new(page()));
-        assert!(cache.get(&host, "/").is_none());
-        let generation = cache.generation(&host);
-        cache.insert(&host, "/".to_owned(), generation, Arc::new(page()));
-        assert!(cache.get(&host, "/").is_some());
-        let other = Host::new("other.example.com").unwrap();
-        cache.invalidate(&other);
-        assert!(cache.get(&host, "/").is_some());
-        cache.invalidate(&host);
-        assert!(cache.get(&host, "/").is_none());
+    fn validity_ends_at_valid_until() {
+        assert!(page().is_valid_at(i64::MAX));
+        let page = page().valid_until(Some(100));
+        assert!(page.is_valid_at(99));
+        assert!(!page.is_valid_at(100));
     }
 }

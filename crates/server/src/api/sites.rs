@@ -45,6 +45,7 @@ pub async fn get(
 /// # Errors
 ///
 /// Returns [`ApiError::Conflict`] when the domain or an alias belongs to another site,
+/// [`ApiError::FieldConflict`] when it is the console host,
 /// and [`ApiError::Validation`] when `home` does not name a page of the site.
 pub async fn put(
     _admin: Admin,
@@ -52,6 +53,7 @@ pub async fn put(
     SitePath(host): SitePath,
     Json(input): Json<SiteInput>,
 ) -> Result<Json<Site>, ApiError> {
+    check_console(state.settings().console_host(), &host, &input.aliases)?;
     let new_key = random_key()?;
     let site = state
         .db()
@@ -100,6 +102,24 @@ pub fn existing(db: &Connection, host: &Host) -> Result<Site, ApiError> {
 
 fn not_found(host: &Host) -> ApiError {
     ApiError::NotFound(format!("no site has the domain {host}"))
+}
+
+/// Rejects a site domain or alias that is the console host.
+fn check_console(console: Option<&Host>, host: &Host, aliases: &[Host]) -> Result<(), ApiError> {
+    let Some(console) = console else {
+        return Ok(());
+    };
+    let conflict = |field: &str| ApiError::FieldConflict {
+        field: field.to_owned(),
+        message: format!("{console} is the console host"),
+    };
+    if host == console {
+        return Err(conflict("host"));
+    }
+    match aliases.iter().position(|alias| alias == console) {
+        Some(index) => Err(conflict(&format!("aliases[{index}]"))),
+        None => Ok(()),
+    }
 }
 
 fn check_names(db: &Connection, host: &Host, aliases: &[Host]) -> Result<(), ApiError> {

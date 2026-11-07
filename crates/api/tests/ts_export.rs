@@ -5,7 +5,10 @@
 use std::path::PathBuf;
 
 use cuhlumn_api::{
+    fonts::{FontItem, GoogleFontInput},
     post::{Post, PostInput},
+    settings::{ServerSettings, ServerSettingsInput, TokenInput},
+    site::announcement::AnnouncementStatus,
     site::{Site, SiteInput},
     wire::{
         ErrorBody, Health, MediaItem, MediaSaved, PostSaved, Preview, PreviewInput, Session,
@@ -31,6 +34,12 @@ fn export_typescript_bindings() {
     SessionInput::export_all(&config).unwrap();
     Health::export_all(&config).unwrap();
     ErrorBody::export_all(&config).unwrap();
+    ServerSettings::export_all(&config).unwrap();
+    ServerSettingsInput::export_all(&config).unwrap();
+    TokenInput::export_all(&config).unwrap();
+    FontItem::export_all(&config).unwrap();
+    GoogleFontInput::export_all(&config).unwrap();
+    AnnouncementStatus::export_all(&config).unwrap();
     assert!(dir.join("Site.ts").is_file());
     assert!(dir.join("ErrorCode.ts").is_file());
 }

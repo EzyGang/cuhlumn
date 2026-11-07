@@ -1,17 +1,18 @@
-//! The composition of a share card: a 1200×630 SVG on a dark ground with accent shapes.
+//! The composition of a share card: a 1200×630 SVG with accent shapes.
 //!
 //! The top row holds the logo or an initial badge and the site title. The title and the subtitle
 //! sit in the middle. A rule separates the bottom row with the host on the left and the meta text
-//! on the right.
+//! on the right. The style sets the colours of a dark ground, a light ground, or an accent ground.
+//! All styles use the same sizes and weights, so the text fitting is the same for each style.
 
 use std::ops::RangeInclusive;
 
-use cuhlumn_api::site::accent::Accent;
+use cuhlumn_api::site::{accent::Accent, theme::CardStyle};
 
 use crate::{
     og::{
         fit::{Lines, TextBox, measure, one_line},
-        palette::{GROUND, MUTED, RULE, SOFT, TEXT, ink_on},
+        palette::CardPalette,
     },
     render::{escape, initial, style::Rgb},
 };
@@ -27,6 +28,7 @@ pub struct Card {
     /// The day and reading time of a post, or nothing.
     pub meta: String,
     pub accent: Accent,
+    pub style: CardStyle,
     /// Draws the logo image in place of the initial badge.
     pub logo: bool,
 }
@@ -66,19 +68,19 @@ impl Card {
     /// Returns the card as SVG.
     #[must_use]
     pub fn svg(&self) -> String {
-        let accent = Rgb::from_accent(&self.accent);
+        let palette = CardPalette::new(self.style, Rgb::from_accent(&self.accent));
         let mut svg = format!(
             r#"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630" font-family="{FONT}">"#
         );
-        svg.push_str(&ground(accent));
-        svg.push_str(&self.top_row(accent));
-        svg.push_str(&self.block());
-        svg.push_str(&self.bottom_row(accent));
+        svg.push_str(&ground(&palette));
+        svg.push_str(&self.top_row(&palette));
+        svg.push_str(&self.block(&palette));
+        svg.push_str(&self.bottom_row(&palette));
         svg.push_str("</svg>");
         svg
     }
 
-    fn top_row(&self, accent: Rgb) -> String {
+    fn top_row(&self, palette: &CardPalette) -> String {
         let mut row = if self.logo {
             format!(
                 r#"<image x="{LEFT}" y="{BADGE_TOP}" width="{BADGE}" height="{BADGE}" preserveAspectRatio="xMidYMid meet" xlink:href="{LOGO_HREF}"/>"#
@@ -88,8 +90,8 @@ impl Card {
             let baseline = BADGE_TOP + BADGE / 2.0 + CAP_MIDDLE * 34.0;
             format!(
                 r#"<rect x="{LEFT}" y="{BADGE_TOP}" width="{BADGE}" height="{BADGE}" rx="{BADGE_RADIUS}" fill="{fill}"/><text x="{center}" y="{baseline:.1}" text-anchor="middle" font-size="34" font-weight="800" fill="{ink}">{letter}</text>"#,
-                fill = accent.hex(),
-                ink = ink_on(accent).hex(),
+                fill = palette.badge.hex(),
+                ink = palette.badge_ink.hex(),
                 letter = escape(&initial(&self.site)),
             )
         };
@@ -101,14 +103,14 @@ impl Card {
         let baseline = BADGE_TOP + BADGE / 2.0 + CAP_MIDDLE * f64::from(SITE_SIZE);
         row.push_str(&format!(
             r#"<text x="{left}" y="{baseline:.1}" font-size="{SITE_SIZE}" font-weight="700" fill="{fill}">{site}</text>"#,
-            fill = TEXT.hex(),
+            fill = palette.text.hex(),
             site = escape(&site),
         ));
         row
     }
 
     /// Fits the subtitle first, then gives the title the rest of the area.
-    fn block(&self) -> String {
+    fn block(&self, palette: &CardPalette) -> String {
         let width = RIGHT - LEFT;
         let subtitle_box = TextBox {
             width,
@@ -136,18 +138,18 @@ impl Card {
         };
         let top =
             BLOCK_TOP + (BLOCK_BOTTOM - BLOCK_TOP - title_height - gap - subtitle_height) / 2.0;
-        let mut block = lines_text(&title, top, TITLE_LEADING, "800", TEXT);
+        let mut block = lines_text(&title, top, TITLE_LEADING, "800", palette.text);
         block.push_str(&lines_text(
             &subtitle,
             top + title_height + gap,
             SUBTITLE_LEADING,
             "400",
-            SOFT,
+            palette.soft,
         ));
         block
     }
 
-    fn bottom_row(&self, accent: Rgb) -> String {
+    fn bottom_row(&self, palette: &CardPalette) -> String {
         let size = f64::from(FOOT_SIZE);
         let meta = one_line(&self.meta, FOOT_SIZE, (RIGHT - LEFT) / 2.0);
         let host_left = LEFT + MARKER + 14.0;
@@ -159,24 +161,27 @@ impl Card {
         let host = one_line(&self.host, FOOT_SIZE, RIGHT - host_left - meta_room);
         let marker_top = FOOT_BASELINE - CAP_MIDDLE * size - MARKER / 2.0;
         format!(
-            r#"<rect x="{LEFT}" y="{RULE_TOP}" width="{rule}" height="2" fill="{rule_fill}"/><rect x="{LEFT}" y="{marker_top:.1}" width="{MARKER}" height="{MARKER}" rx="3" fill="{accent}"/><text x="{host_left}" y="{FOOT_BASELINE}" font-size="{FOOT_SIZE}" font-weight="600" fill="{host_fill}">{host}</text><text x="{RIGHT}" y="{FOOT_BASELINE}" text-anchor="end" font-size="{FOOT_SIZE}" fill="{meta_fill}">{meta}</text>"#,
+            r#"<rect x="{LEFT}" y="{RULE_TOP}" width="{rule}" height="2" fill="{rule_fill}" fill-opacity="{rule_opacity}"/><rect x="{LEFT}" y="{marker_top:.1}" width="{MARKER}" height="{MARKER}" rx="3" fill="{marker}"/><text x="{host_left}" y="{FOOT_BASELINE}" font-size="{FOOT_SIZE}" font-weight="600" fill="{host_fill}">{host}</text><text x="{RIGHT}" y="{FOOT_BASELINE}" text-anchor="end" font-size="{FOOT_SIZE}" fill="{meta_fill}">{meta}</text>"#,
             rule = RIGHT - LEFT,
-            rule_fill = RULE.hex(),
-            accent = accent.hex(),
-            host_fill = SOFT.hex(),
+            rule_fill = palette.rule.hex(),
+            rule_opacity = palette.rule_opacity,
+            marker = palette.badge.hex(),
+            host_fill = palette.soft.hex(),
             host = escape(&host),
-            meta_fill = MUTED.hex(),
+            meta_fill = palette.muted.hex(),
             meta = escape(&meta),
         )
     }
 }
 
-/// Draws the ground: the dark fill, the accent band at the left edge, and the accent disc and ring in the top right corner.
-fn ground(accent: Rgb) -> String {
+/// Draws the ground: the fill, the band at the left edge, and the disc and the ring in the top right corner.
+fn ground(palette: &CardPalette) -> String {
     format!(
-        r#"<rect width="1200" height="630" fill="{ground}"/><rect width="20" height="630" fill="{accent}"/><circle cx="1200" cy="0" r="156" fill="{accent}"/><circle cx="1200" cy="0" r="200" fill="none" stroke="{accent}" stroke-width="6" stroke-opacity="0.5"/>"#,
-        ground = GROUND.hex(),
-        accent = accent.hex(),
+        r#"<rect width="1200" height="630" fill="{ground}"/><g fill-opacity="{opacity}"><rect width="20" height="630" fill="{shape}"/><circle cx="1200" cy="0" r="156" fill="{shape}"/></g><circle cx="1200" cy="0" r="200" fill="none" stroke="{shape}" stroke-width="6" stroke-opacity="{ring}"/>"#,
+        ground = palette.ground.hex(),
+        shape = palette.shape.hex(),
+        opacity = palette.shape_opacity,
+        ring = palette.shape_opacity / 2.0,
     )
 }
 
@@ -204,7 +209,7 @@ fn lines_text(lines: &Lines, top: f64, leading: f64, weight: &str, fill: Rgb) ->
 
 #[cfg(test)]
 mod tests {
-    use cuhlumn_api::site::accent::Accent;
+    use cuhlumn_api::site::{accent::Accent, theme::CardStyle};
     use resvg::usvg;
 
     use crate::og::card::{Card, LOGO_HREF};
@@ -217,6 +222,7 @@ mod tests {
             host: "notes.example.com".to_owned(),
             meta: "March 3, 2026 · 6 min read".to_owned(),
             accent: Accent::new("#0f766e").unwrap(),
+            style: CardStyle::Dark,
             logo: false,
         }
     }
@@ -258,15 +264,35 @@ mod tests {
     }
 
     #[test]
+    fn every_style_has_the_same_layout() {
+        // The parts that set where text goes and how large it is, without the colours.
+        let layout = |svg: &str| -> Vec<String> {
+            svg.split(['<', '>'])
+                .filter(|part| part.starts_with("tspan") || part.starts_with("text "))
+                .map(|part| part.split(" fill=").next().unwrap_or(part).to_owned())
+                .collect()
+        };
+        let dark = card("How we back up SQLite").svg();
+        for style in [CardStyle::Light, CardStyle::Accent] {
+            let styled = Card {
+                style,
+                ..card("How we back up SQLite")
+            };
+            assert_eq!(layout(&styled.svg()), layout(&dark), "{style}");
+            parses(&styled.svg());
+        }
+    }
+
+    #[test]
     fn empty_cards_do_not_fail() {
         let empty = Card {
             site: String::new(),
-            title: String::new(),
             subtitle: String::new(),
             host: String::new(),
             meta: String::new(),
             accent: Accent::default(),
-            logo: false,
+            style: CardStyle::Accent,
+            ..card("")
         };
         parses(&empty.svg());
     }

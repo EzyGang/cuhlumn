@@ -6,9 +6,8 @@ export const ImageFields = (): JSX.Element => {
   const { data } = useSiteSettingsContext();
   return (
     <>
-      {data.imageFields.map((field) => (
-        <ImageField key={field.name} field={field} picker={data.picker} />
-      ))}
+      <ImageField field={data.images.logo} picker={data.picker} />
+      <ImageField field={data.images.favicon} picker={data.picker} />
     </>
   );
 };

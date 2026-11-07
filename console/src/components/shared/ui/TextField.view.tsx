@@ -10,7 +10,7 @@ interface TextFieldProps {
   error?: string | undefined;
   description?: string | undefined;
   placeholder?: string | undefined;
-  type?: "text" | "url" | undefined;
+  type?: "text" | "url" | "datetime-local" | undefined;
   disabled?: boolean | undefined;
   multiline?: number | undefined;
   mono?: boolean | undefined;

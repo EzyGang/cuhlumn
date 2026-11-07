@@ -1,30 +1,50 @@
 //! Server that hosts many blogs, each on its own domain.
 
-use std::net::{Ipv4Addr, SocketAddr};
+use std::{
+    net::{Ipv4Addr, SocketAddr},
+    process::ExitCode,
+};
 
 use anyhow::Context;
-use clap::Parser;
-use cuhlumn_server::{config::Config, router, state::AppState};
+use cuhlumn_server::{
+    config::{Config, Task},
+    healthcheck, router,
+    state::AppState,
+};
 use tracing_subscriber::{EnvFilter, filter::LevelFilter};
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> anyhow::Result<ExitCode> {
     let filter = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
         .from_env()
         .context("RUST_LOG is not a valid tracing filter")?;
     tracing_subscriber::fmt().with_env_filter(filter).init();
-    let config = Config::parse();
-    if config.token().is_none() {
-        tracing::warn!(
-            "CUHLUMN_TOKEN is not set, so the admin API and the console are off; blogs are still served"
-        );
+    let config = Config::from_env().unwrap_or_else(|err| err.exit());
+    if config.command == Some(Task::Healthcheck) {
+        let port = config.port;
+        let healthy = tokio::task::spawn_blocking(move || healthcheck::run(port))
+            .await
+            .context("the health check task failed")?;
+        return Ok(if healthy {
+            ExitCode::SUCCESS
+        } else {
+            ExitCode::FAILURE
+        });
     }
+    serve(config).await?;
+    Ok(ExitCode::SUCCESS)
+}
+
+async fn serve(config: Config) -> anyhow::Result<()> {
     let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, config.port));
     let data = config.data.clone();
     let state = AppState::open(config)
         .await
         .with_context(|| format!("cannot open the data folder {}", data.display()))?;
+    if state.settings().needs_setup() {
+        tracing::warn!("the server has no admin token yet, open the console to set the token");
+    }
     let listener = tokio::net::TcpListener::bind(address)
         .await
         .with_context(|| format!("cannot listen on {address}"))?;

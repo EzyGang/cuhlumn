@@ -1,4 +1,4 @@
-//! The embedded management console, served only on the console host.
+//! The embedded management console, served only on the console hosts.
 
 use std::borrow::Cow;
 
@@ -8,18 +8,20 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use bytes::Bytes;
+use cuhlumn_api::settings::Scheme;
 use rust_embed::{Embed, EmbeddedFile};
 
-use crate::{config::Scheme, state::AppState, web::plain};
+use crate::{state::AppState, web::plain};
 
 /// Answers a request for a console path that is not under `/api`.
 ///
 /// Paths that name no embedded file get `index.html`, so the console can route them.
 /// Missing files under `/assets/` get 404.
+/// Before the first setup, the console still loads, so it can show the setup page.
 #[must_use]
 pub fn serve(state: &AppState, method: &Method, path: &str) -> Response {
-    let mut response = respond(state, method, path);
-    let csp = match state.config().scheme {
+    let mut response = respond(method, path);
+    let csp = match state.settings().scheme() {
         Scheme::Https => CSP_HTTPS,
         Scheme::Http => CSP_HTTP,
     };
@@ -56,13 +58,7 @@ const CSP_HTTP: &str = "default-src 'self'; img-src 'self' http: https: data:; s
 const IMMUTABLE: &str = "public, max-age=31536000, immutable";
 const NO_CACHE: &str = "no-cache";
 
-fn respond(state: &AppState, method: &Method, path: &str) -> Response {
-    if state.config().token().is_none() {
-        return plain(
-            StatusCode::SERVICE_UNAVAILABLE,
-            "The console is off until the server has CUHLUMN_TOKEN.".to_owned(),
-        );
-    }
+fn respond(method: &Method, path: &str) -> Response {
     if !matches!(*method, Method::GET | Method::HEAD) {
         let mut response = plain(
             StatusCode::METHOD_NOT_ALLOWED,

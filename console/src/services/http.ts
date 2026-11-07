@@ -1,3 +1,4 @@
+import { sessionStore } from "../stores/session.store";
 import type { ErrorBody } from "../types/api/ErrorBody";
 import type { ErrorCode } from "../types/api/ErrorCode";
 
@@ -50,6 +51,15 @@ const readError = async (response: Response): Promise<ApiError> => {
   return new ApiError(response.status, errorBody("internal", message));
 };
 
+/** Reads a failed response, and sends the console to the setup page when the server has no token. */
+const failure = async (response: Response): Promise<ApiError> => {
+  const error = await readError(response);
+  if (error.body.error.code === "needs_setup") {
+    sessionStore.status.value = "setup";
+  }
+  return error;
+};
+
 const send = async (method: string, path: string, options: RequestOptions): Promise<Response> => {
   const headers = new Headers({ Accept: "application/json" });
   let body: BodyInit | undefined;
@@ -72,7 +82,7 @@ const send = async (method: string, path: string, options: RequestOptions): Prom
     throw new ApiError(0, errorBody("internal", "The server cannot be reached."));
   }
   if (!response.ok) {
-    throw await readError(response);
+    throw await failure(response);
   }
   return response;
 };

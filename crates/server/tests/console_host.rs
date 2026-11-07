@@ -13,8 +13,9 @@ mod common;
 
 use axum::{body::Body, http::StatusCode};
 use cuhlumn_server::console;
+use serde_json::json;
 
-use crate::common::{CONSOLE, Res, TOKEN, TestApp, request};
+use crate::common::{ADMIN_HOST, CONSOLE, HOST, Res, Setup, TOKEN, TestApp, json_body, request};
 
 const CSP: &str = "default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
 const CSP_HTTP: &str = "default-src 'self'; img-src 'self' http: https: data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'";
@@ -99,10 +100,15 @@ async fn hashed_assets_are_immutable() {
 }
 
 #[tokio::test]
-async fn console_is_off_without_a_token() {
+async fn console_loads_before_the_first_setup() {
     let app = TestApp::without_token().await;
     let res = get(&app, "/").await;
-    assert_eq!(res.status, StatusCode::SERVICE_UNAVAILABLE);
+    let expected = match console::is_built() {
+        true => StatusCode::OK,
+        false => StatusCode::SERVICE_UNAVAILABLE,
+    };
+    assert_eq!(res.status, expected);
+    assert!(!res.text().contains("CUHLUMN_TOKEN"), "{}", res.text());
     assert_security_headers(&res);
 }
 
@@ -138,4 +144,108 @@ async fn other_hosts_never_get_the_console() {
         .await;
     assert_eq!(res.status, StatusCode::NOT_FOUND);
     assert_eq!(res.header("content-security-policy"), "");
+}
+
+/// Returns a fresh server with a token but without a console host, and the site `HOST`.
+async fn bootstrap() -> TestApp {
+    let app = TestApp::open(Setup {
+        token: Some(TOKEN),
+        ..Setup::fresh()
+    })
+    .await;
+    app.create_site().await;
+    app
+}
+
+#[tokio::test]
+async fn without_a_console_host_other_hosts_get_the_console() {
+    let app = bootstrap().await;
+    let console = app
+        .send(
+            request("GET", "localhost", "/")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(console.header("content-security-policy"), CSP);
+    for host in [HOST, "www.blog.example.com"] {
+        let blog = app
+            .send(request("GET", host, "/").body(Body::empty()).unwrap())
+            .await;
+        assert_eq!(blog.header("content-security-policy"), "", "{host}");
+        assert!(!blog.text().contains("<div id=\"root\">"), "{host}");
+    }
+}
+
+#[tokio::test]
+async fn without_a_console_host_cookies_work_only_on_console_hosts() {
+    let app = bootstrap().await;
+    let login = json_body(
+        request("POST", "localhost", "/api/session").header("origin", "http://localhost:5173"),
+        Some(json!({"token": TOKEN})),
+    );
+    let res = app.send(login).await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+    let cookie = res
+        .header("set-cookie")
+        .split(';')
+        .next()
+        .unwrap()
+        .to_owned();
+    let on = |host: &str| {
+        request("GET", host, "/api/sites")
+            .header("cookie", &cookie)
+            .body(Body::empty())
+            .unwrap()
+    };
+    assert_eq!(app.send(on("localhost")).await.status, StatusCode::OK);
+    app.send(on(HOST))
+        .await
+        .assert_error(StatusCode::UNAUTHORIZED, "unauthorized");
+    let foreign = request("DELETE", "localhost", &format!("/api/sites/{HOST}"))
+        .header("cookie", &cookie)
+        .header("origin", "https://evil.example.org")
+        .body(Body::empty())
+        .unwrap();
+    app.send(foreign)
+        .await
+        .assert_error(StatusCode::FORBIDDEN, "forbidden");
+    let session = request("GET", HOST, "/api/session")
+        .header("cookie", &cookie)
+        .body(Body::empty())
+        .unwrap();
+    app.send(session)
+        .await
+        .assert_error(StatusCode::NOT_FOUND, "not_found");
+}
+
+#[tokio::test]
+async fn console_host_cannot_be_a_site() {
+    let app = bootstrap().await;
+    let taken = json!({"console_host": "www.blog.example.com", "scheme": "https"});
+    let res = app.api("PUT", "/api/settings", Some(taken)).await;
+    res.assert_error(StatusCode::CONFLICT, "conflict");
+    assert_eq!(res.field(), "console_host");
+    let free = json!({"console_host": "admin.harbor.example.com", "scheme": "https"});
+    let res = app.api("PUT", "/api/settings", Some(free)).await;
+    assert_eq!(res.status, StatusCode::OK, "{}", res.text());
+    let site = json!({"title": "Admin", "aliases": ["admin.harbor.example.com"]});
+    let res = app
+        .api("PUT", "/api/sites/harbor.example.com", Some(site))
+        .await;
+    res.assert_error(StatusCode::CONFLICT, "conflict");
+    assert_eq!(res.field(), "aliases[0]");
+    let res = app
+        .api(
+            "PUT",
+            "/api/sites/admin.harbor.example.com",
+            Some(json!({"title": "x"})),
+        )
+        .await;
+    res.assert_error(StatusCode::CONFLICT, "conflict");
+    assert_eq!(res.field(), "host");
+    let other = app
+        .send(request("GET", ADMIN_HOST, "/").body(Body::empty()).unwrap())
+        .await;
+    assert_eq!(other.header("content-security-policy"), "");
 }

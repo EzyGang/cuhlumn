@@ -1,14 +1,18 @@
 //! Pages, feeds, and the files that search engines and AI assistants read, made from a site and its posts.
 
+pub mod announcement;
 pub mod article;
 pub mod blog;
+pub mod code_theme;
 pub mod files;
 pub mod home;
 pub mod layout;
+pub mod listing;
 pub mod markdown;
 pub mod meta;
 pub mod not_found;
 pub mod schema;
+pub mod social;
 pub mod style;
 pub mod tag;
 

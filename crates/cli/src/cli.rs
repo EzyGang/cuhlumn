@@ -1,5 +1,7 @@
 //! Command-line arguments.
 
+pub mod announce;
+
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
@@ -8,7 +10,7 @@ use cuhlumn_api::{
     site::{host::Host, link::AbsoluteUrl},
 };
 
-use crate::assign::Assignment;
+use crate::{assign::Assignment, cli::announce::AnnounceCommand};
 
 /// Manages blogs on a cuhlumn server through its HTTP API.
 ///
@@ -51,6 +53,9 @@ pub enum Command {
     /// Uploads, lists, and deletes images of the site.
     #[command(subcommand)]
     Media(MediaCommand),
+    /// Shows, sets, and clears the announcement bar of the site.
+    #[command(subcommand)]
+    Announce(AnnounceCommand),
     /// Prints the agent skill that explains this CLI.
     Skill,
     /// Installs the agent skill into AI agents with the `skills` installer from npm.
@@ -210,6 +215,7 @@ Examples:
   cuhlumn media upload diagram.png
   cuhlumn post push sqlite-backups.md --publish
   cuhlumn post get sqlite-backups --markdown > sqlite-backups.md
+  cuhlumn announce set \"We moved to a new server.\" --until 2026-12-01T00:00:00Z
   cuhlumn skill";
 
 const SET_HELP: &str = "\
