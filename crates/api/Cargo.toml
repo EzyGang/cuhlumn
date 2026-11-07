@@ -3,6 +3,8 @@ name = "cuhlumn-api"
 description = "Request and response types of the cuhlumn HTTP API"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [features]
 ts = ["dep:ts-rs"]

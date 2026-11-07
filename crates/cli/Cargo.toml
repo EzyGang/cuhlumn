@@ -3,6 +3,8 @@ name = "cuhlumn-cli"
 description = "Command-line client that agents use to manage blogs on a cuhlumn server"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "cuhlumn"
