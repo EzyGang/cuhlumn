@@ -98,7 +98,7 @@ All timestamps are Unix time in seconds.
 `GET /api/health` needs no authentication and works before the setup.
 
 ```json
-{ "ok": true, "version": "0.12.0", "needs_setup": false }
+{ "ok": true, "version": "0.13.0", "needs_setup": false }
 ```
 
 `needs_setup` is `true` while the server has no admin token.
