@@ -44,6 +44,7 @@ The public address then answers only `cuhlumn health`, and the other commands ge
 
 `cuhlumn health` needs only the server address.
 `cuhlumn site list` needs the server address and the token.
+The `font` commands need the server address and the token, but not the site.
 Every other site, post, media, and announce command also needs the site.
 
 A new server without a token is in setup mode.
@@ -75,6 +76,10 @@ The client uses the token that the admin set.
 | `cuhlumn announce show` | The announcement bar and its status |
 | `cuhlumn announce set <text> [options]` | Replaces the announcement bar |
 | `cuhlumn announce clear` | Removes the announcement bar |
+| `cuhlumn font list` | Fonts of the server library |
+| `cuhlumn font import <url>` | Imports fonts from a Google Fonts address |
+| `cuhlumn font upload <file>` | Uploads a TTF, OTF, or TTC font |
+| `cuhlumn font delete <name> --yes` | Deletes a font |
 | `cuhlumn skill` | Prints the agent skill |
 | `cuhlumn install-skill` | Installs the agent skill into AI agents with the `skills` installer |
 
@@ -205,6 +210,31 @@ Every `announce` command prints the status and the announcement:
 | `scheduled` | The start time is in the future |
 | `live` | Readers see the bar now |
 | `ended` | The end time is in the past |
+
+## Font library
+
+The [font library](../reference/fonts.md) belongs to the server, and every site can use its families.
+
+```sh
+cuhlumn font import 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400'
+cuhlumn site set brand.font_family=Lora
+cuhlumn font list
+cuhlumn font delete <name> --yes
+```
+
+`font import` accepts a Google Fonts specimen page or a `css2` or `css` stylesheet address.
+A specimen page, such as `https://fonts.google.com/specimen/Lora`, imports only the regular face.
+A `css2` address with `ital,wght@0,400;0,700;1,400` imports the regular, bold, and italic faces.
+The server downloads at most 20 files of up to 20 MB each.
+
+`font upload <file>` uploads one TTF, OTF, or TTC file of up to 20 MB.
+`font list`, `font import`, and `font upload` print the fonts as JSON.
+`font delete` needs `--yes`.
+
+A blog uses a library family through `brand.font_family`.
+Share images use library fonts for characters that Inter does not have.
+The server serves the fonts publicly.
+Use only fonts whose license allows web use, such as Google Fonts.
 
 ## Images
 

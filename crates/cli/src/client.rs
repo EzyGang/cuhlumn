@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use cuhlumn_api::{
+    fonts::{FontItem, GoogleFontInput},
     post::{Post, PostInput, slug::Slug},
     site::{Site, SiteInput, host::Host, link::AbsoluteUrl},
     wire::{ErrorBody, ErrorCode, Health, MediaItem, MediaSaved, PostSaved, Preview, PreviewInput},
@@ -136,6 +137,30 @@ impl Client {
     pub fn preview(&self, host: &Host, input: &PreviewInput) -> Result<Preview, ClientError> {
         let path = format!("/sites/{host}/preview");
         receive(with_json(self.request(Method::POST, &path), input)?)
+    }
+
+    pub fn fonts(&self) -> Result<Vec<FontItem>, ClientError> {
+        receive(self.request(Method::GET, "/fonts"))
+    }
+
+    pub fn import_google_font(&self, url: AbsoluteUrl) -> Result<Vec<FontItem>, ClientError> {
+        let input = GoogleFontInput { url };
+        receive(with_json(
+            self.request(Method::POST, "/fonts/google"),
+            &input,
+        )?)
+    }
+
+    pub fn upload_font(&self, bytes: Vec<u8>) -> Result<FontItem, ClientError> {
+        let request = self
+            .request(Method::POST, "/fonts")
+            .header(CONTENT_TYPE, "application/octet-stream")
+            .body(bytes);
+        receive(request)
+    }
+
+    pub fn delete_font(&self, name: &str) -> Result<(), ClientError> {
+        receive_empty(self.request(Method::DELETE, &format!("/fonts/{name}")))
     }
 
     fn request(&self, method: Method, path: &str) -> RequestBuilder {

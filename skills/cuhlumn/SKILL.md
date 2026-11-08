@@ -254,6 +254,29 @@ Every `announce` command prints `{"status": ..., "announcement": ...}`.
 `status` is `off` (no announcement), `scheduled`, `live`, or `ended`.
 `announcement` is `null` when the status is `off`.
 
+## Font library
+
+The font library belongs to the server, not to a site.
+The `font` commands need the server address and the token, but not the site.
+
+```sh
+cuhlumn font import 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400'
+cuhlumn site set brand.font_family=Lora
+cuhlumn font list
+cuhlumn font upload HarborSans-Regular.ttf
+cuhlumn font delete <name> --yes
+```
+
+- `font list` prints the fonts as JSON, with `name`, `families`, `source`, `size`, and `created_at`.
+- `font import <url>` imports fonts from a Google Fonts specimen page or a `css2` or `css` stylesheet address, and prints the new fonts.
+- A specimen page, such as `https://fonts.google.com/specimen/Lora`, imports only the regular face.
+- To import bold and italic faces, use a `css2` address with `ital,wght@0,400;0,700;1,400`.
+- `font upload <file>` uploads one TTF, OTF, or TTC file of up to 20 MB, and prints the font.
+- `font delete <name> --yes` deletes a font. Without `--yes`, the command refuses.
+- A blog uses a library family through `brand.font_family`.
+- Share images use library fonts for characters that Inter does not have.
+- The server serves the fonts publicly. Use only fonts whose license allows web use, such as Google Fonts.
+
 ## Home page
 
 1. Push a page: front matter with `kind: page` and `status: published`, for example slug `home`.
