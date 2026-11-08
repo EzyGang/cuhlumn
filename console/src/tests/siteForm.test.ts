@@ -28,6 +28,7 @@ const harbor = (): Site => ({
   brand: {
     accent: "#0e7490",
     font: "sans",
+    font_family: "Source Serif 4",
     logo: "/media/logo.png",
     favicon: null,
     og_image: null,
@@ -114,6 +115,8 @@ describe("site form mapping", () => {
       code_theme: "github",
       card_style: "dark",
       card_meta: true,
+      font: "serif",
+      font_family: null,
     });
   });
 });
@@ -125,6 +128,10 @@ describe("site field errors", () => {
     expect(known).toContain("brand.social.1");
     expect(known).toContain("brand.social.1.url");
     expect(known).not.toContain("brand.social.2");
+  });
+
+  it("knows the font family field", () => {
+    expect(known).toContain("brand.font_family");
   });
 
   it("moves an announcement error to the child field that its message names", () => {

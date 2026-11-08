@@ -238,6 +238,7 @@ A blog can show one of its pages as the home page, with the latest posts below i
 ### Appearance
 
 Each blog sets its accent color, text font, logo, favicon, share image, header links, extra head HTML, and footer text.
+The text font can be a system font or a blog font from the font library.
 It also selects a palette, a theme mode, a column width, a home page layout, a code theme, and a share image style.
 Social profile links show as icons in the footer, and optionally in the header.
 Link and code colors are adjusted until they meet WCAG AA contrast in the light and the dark theme.

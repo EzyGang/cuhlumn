@@ -64,6 +64,19 @@ fn brand_limits_apply() {
 }
 
 #[test]
+fn font_family_is_trimmed_and_checked() {
+    let family = |value: Value| parse(json!({"title": "x", "brand": {"font_family": value}}));
+    let input = family(json!("  Lora ")).unwrap();
+    assert_eq!(input.brand.font_family.as_deref(), Some("Lora"));
+    assert_eq!(family(Value::Null).unwrap().brand.font_family, None);
+    assert!(family(json!("a".repeat(100))).is_ok());
+    assert!(family(json!("a".repeat(101))).is_err());
+    assert!(family(json!("   ")).is_err());
+    assert!(family(json!("Lora\tItalic")).is_err());
+    assert!(family(json!("Lora\u{0}")).is_err());
+}
+
+#[test]
 fn unknown_fields_fail() {
     assert!(parse(json!({"title": "x", "accent": "#abc"})).is_err());
     assert!(parse(json!({"title": "x", "brand": {"color": "#abc"}})).is_err());

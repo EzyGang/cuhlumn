@@ -43,7 +43,8 @@ Unknown fields return `400`.
 | Field | Type | Default | Rule |
 | --- | --- | --- | --- |
 | `accent` | [`Accent`](value-types.md#accent) | `"#2563eb"` | |
-| `font` | [`Font`](value-types.md#enumerations) | `"serif"` | |
+| `font` | [`Font`](value-types.md#enumerations) | `"serif"` | The fallback stack when `font_family` is set |
+| `font_family` | String or `null` | `null` | Trimmed, 1 to 100 characters, no control characters. See the rules below |
 | `logo` | [`LinkUrl`](value-types.md#linkurl) or `null` | `null` | |
 | `favicon` | `LinkUrl` or `null` | `null` | |
 | `og_image` | `LinkUrl` or `null` | `null` | |
@@ -131,6 +132,11 @@ The answer of the site routes.
 | `{host}` is an alias in `GET` or `DELETE` | `404` |
 | `{host}` is the console domain | `409`, field `host` |
 | An alias is the console domain | `409`, field `aliases[N]` |
+| `brand.font_family` changes to a family that no library font has | `400` `validation`, field `brand.font_family` |
+
+A `brand.font_family` value that is equal to the stored value always passes.
+A site that uses a deleted family can therefore still save its other fields.
+The blog serves library files at [`GET /_fonts/{name}`](fonts.md#public-font-route).
 
 A new site cannot set `home` in its first `PUT`, because it has no pages yet.
 Create the page first, then set `home`.

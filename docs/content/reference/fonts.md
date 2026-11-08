@@ -1,8 +1,9 @@
 # Fonts
 
-The font library contains extra fonts for [share images](../platform/share-images.md#fonts).
+The font library contains extra fonts for [share images](../platform/share-images.md#fonts) and [blog fonts](../platform/appearance.md#blog-font).
 The files are in the `fonts/` folder of the data folder.
-All routes need admin authentication.
+The `/api/fonts` routes need admin authentication.
+A site uses a library family through `brand.font_family`.
 
 ## Routes
 
@@ -77,6 +78,24 @@ When one file fails, the files that were stored before it stay in the library.
 `{name}` has ASCII letters, digits, and hyphens, then `.ttf`, `.otf`, or `.ttc`.
 Other values return `400` with `field` set to `name`.
 An unknown name returns `404`.
+
+## Public font route
+
+`GET /_fonts/{name}` and `HEAD /_fonts/{name}` serve a library file without authentication.
+Every blog host, every console host, and the admin listener serve this route.
+The console preview therefore loads the same files.
+
+| Header | Value |
+| --- | --- |
+| `Content-Type` | `font/ttf`, `font/otf`, or `font/collection`, from the extension |
+| `Cache-Control` | `public, max-age=31536000, immutable` |
+| `Access-Control-Allow-Origin` | `*` |
+| `X-Content-Type-Options` | `nosniff` |
+
+The file name contains a hash of the content, so a cached file never changes.
+A name that breaks the name rule returns `404`.
+An unknown file returns `404`.
+Slugs cannot contain `_`, so the route never collides with a post.
 
 ## Example
 

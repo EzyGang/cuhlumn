@@ -2,6 +2,7 @@ import { createContext } from "preact";
 import type { ComponentChildren, JSX } from "preact";
 import { useContext } from "preact/hooks";
 import type { ChipInputModel } from "../../../types/chips";
+import type { FontModel, FontValue } from "../../../types/fonts";
 import type { LoadState } from "../../../types/load";
 import type {
   AnnouncementActions,
@@ -30,6 +31,7 @@ export interface SiteSettingsContextValue {
     picker: MediaPickerModel;
     colorValue: string;
     options: AppearanceOptions;
+    font: FontModel;
     images: Record<ImageKey, ImageFieldModel>;
     linksTitle: string;
     canAddLink: boolean;
@@ -41,6 +43,7 @@ export interface SiteSettingsContextValue {
     text: Record<SiteTextKey, (value: string) => void>;
     toggle: Record<SiteFlagKey, (value: boolean) => void>;
     choose: AppearanceSetters;
+    chooseFont: (value: FontValue) => void;
     addLink: () => void;
     addSocial: () => void;
     announcement: AnnouncementActions;

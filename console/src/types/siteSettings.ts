@@ -81,6 +81,8 @@ export type AnnouncementTextKey = "text" | "link" | "link_label" | "starts_at" |
 export type AnnouncementState = "off" | AnnouncementStatus;
 
 export interface SiteForm extends Record<SiteTextKey, string>, AppearanceChoices {
+  /** A family of the font library, or null for the system font stack of `font`. */
+  font_family: string | null;
   aliases: string[];
   links: Link[];
   social: SocialLink[];

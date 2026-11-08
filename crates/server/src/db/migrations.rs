@@ -116,4 +116,7 @@ CREATE TABLE fonts (
 ALTER TABLE sites ADD COLUMN show_cta INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE posts ADD COLUMN show_cta INTEGER;
 ",
+    r"
+ALTER TABLE sites ADD COLUMN font_family TEXT;
+",
 ];

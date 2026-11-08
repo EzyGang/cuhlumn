@@ -1,5 +1,7 @@
 //! Shared helpers: a router on a temporary data folder and request shortcuts.
 
+pub mod font;
+
 use std::{
     path::{Path, PathBuf},
     sync::Arc,

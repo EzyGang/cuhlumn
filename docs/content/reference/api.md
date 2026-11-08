@@ -60,11 +60,14 @@ An unknown `/api` path returns `404`.
 A known path with a wrong method returns `405`.
 Both answers use the [error format](errors.md).
 
+Outside `/api`, every blog host, console host, and the admin listener serve `GET /_fonts/{name}` without authentication.
+See [Public font route](fonts.md#public-font-route).
+
 ## Status codes
 
 | Status | Routes | Cause |
 | --- | --- | --- |
-| `400` | All routes with a body or a path parameter | Invalid JSON or a value that breaks a rule |
+| `400` | All routes with a body or a path parameter | Invalid JSON or a value that breaks a rule, such as a `brand.font_family` that no library font has |
 | `401` | Admin routes, `POST /api/session` | A missing or wrong token or session |
 | `403` | Cookie requests that change data, `POST /api/session`, `POST /api/setup` | The `Origin` header names another domain |
 | `404` | Routes with a path parameter, session routes | The object does not exist, or the domain does not serve the console |

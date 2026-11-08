@@ -98,21 +98,23 @@ pub fn put(
     let tx = connection.transaction()?;
     tx.execute(
         "INSERT INTO sites (host, title, description, author, author_url, project_name, project_url,
-           cta, show_cta, lang, home, indexnow_key, accent, font, logo, favicon, og_image, links,
-           head, footer, credit, palette, theme, theme_toggle, width, home_layout, social,
-           social_in_header, code_theme, card_style, card_meta, indexnow, announcement, updated_at)
+           cta, show_cta, lang, home, indexnow_key, accent, font, font_family, logo, favicon,
+           og_image, links, head, footer, credit, palette, theme, theme_toggle, width, home_layout,
+           social, social_in_header, code_theme, card_style, card_meta, indexnow, announcement,
+           updated_at)
          VALUES (:host, :title, :description, :author, :author_url, :project_name, :project_url,
-           :cta, :show_cta, :lang, :home, COALESCE(:key, :new_key), :accent, :font, :logo, :favicon,
-           :og_image, :links, :head, :footer, :credit, :palette, :theme, :theme_toggle, :width,
-           :home_layout, :social, :social_in_header, :code_theme, :card_style, :card_meta, :indexnow,
-           :announcement, :now)
+           :cta, :show_cta, :lang, :home, COALESCE(:key, :new_key), :accent, :font, :font_family,
+           :logo, :favicon, :og_image, :links, :head, :footer, :credit, :palette, :theme,
+           :theme_toggle, :width, :home_layout, :social, :social_in_header, :code_theme,
+           :card_style, :card_meta, :indexnow, :announcement, :now)
          ON CONFLICT (host) DO UPDATE SET title = excluded.title,
            description = excluded.description, author = excluded.author,
            author_url = excluded.author_url, project_name = excluded.project_name,
            project_url = excluded.project_url, cta = excluded.cta,
            show_cta = excluded.show_cta, lang = excluded.lang,
            home = excluded.home, indexnow_key = COALESCE(:key, sites.indexnow_key),
-           accent = excluded.accent, font = excluded.font, logo = excluded.logo,
+           accent = excluded.accent, font = excluded.font, font_family = excluded.font_family,
+           logo = excluded.logo,
            favicon = excluded.favicon, og_image = excluded.og_image, links = excluded.links,
            head = excluded.head, footer = excluded.footer, credit = excluded.credit,
            palette = excluded.palette, theme = excluded.theme,
@@ -138,6 +140,7 @@ pub fn put(
             ":new_key": new_key.as_str(),
             ":accent": brand.accent.as_str(),
             ":font": brand.font.as_str(),
+            ":font_family": brand.font_family,
             ":logo": brand.logo.as_ref().map(|url| url.as_str()),
             ":favicon": brand.favicon.as_ref().map(|url| url.as_str()),
             ":og_image": brand.og_image.as_ref().map(|url| url.as_str()),
@@ -183,8 +186,8 @@ pub fn delete(connection: &Connection, host: &Host) -> Result<bool, DbError> {
 }
 
 const SELECT: &str = "SELECT host, title, description, author, author_url, project_name,
-  project_url, cta, show_cta, lang, home, indexnow_key, accent, font, logo, favicon, og_image,
-  links, head, footer, credit, palette, theme, theme_toggle, width, home_layout, social,
+  project_url, cta, show_cta, lang, home, indexnow_key, accent, font, font_family, logo, favicon,
+  og_image, links, head, footer, credit, palette, theme, theme_toggle, width, home_layout, social,
   social_in_header, code_theme, card_style, card_meta, indexnow, announcement, updated_at
   FROM sites";
 
@@ -214,6 +217,7 @@ fn brand_row(row: &Row<'_>) -> rusqlite::Result<Brand> {
     Ok(Brand {
         accent: parse(row, "accent")?,
         font: parse(row, "font")?,
+        font_family: row.get("font_family")?,
         logo: parse_optional(row, "logo")?,
         favicon: parse_optional(row, "favicon")?,
         og_image: parse_optional(row, "og_image")?,

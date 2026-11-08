@@ -1,9 +1,19 @@
 import type {
   AppearanceChoices,
   AppearanceOptions,
-  AppearanceSetters,
+  SiteForm,
   SiteFormUpdate,
 } from "../../../types/siteSettings";
+import type { FieldErrors } from "../../../utils/fieldErrors";
+import type { SiteSettingsContextValue } from "../context/SiteSettingsContext";
+import { useFontFamilies } from "./useFontFamilies.hook";
+
+type Context = SiteSettingsContextValue;
+
+interface AppearanceModel {
+  data: Pick<Context["data"], "options" | "font">;
+  actions: Pick<Context["actions"], "choose" | "chooseFont">;
+}
 
 const OPTIONS: AppearanceOptions = {
   palette: [
@@ -29,8 +39,8 @@ const OPTIONS: AppearanceOptions = {
     { value: "cards", label: "Cards", description: "A grid with the cover images." },
   ],
   font: [
-    { value: "serif", label: "Serif", description: "A classic book face for post text." },
-    { value: "sans", label: "Sans serif", description: "A clean modern face for post text." },
+    { value: "serif", label: "Serif", description: "Used when the library font cannot load." },
+    { value: "sans", label: "Sans serif", description: "Used when the library font cannot load." },
   ],
   code_theme: [
     { value: "github", label: "GitHub", description: "Familiar colours on a neutral ground." },
@@ -45,24 +55,30 @@ const OPTIONS: AppearanceOptions = {
   ],
 };
 
-/** Returns the appearance choices with a setter for each choice. */
+/** Returns the appearance choices with a setter for each choice, and the Font control. */
 export const useAppearanceOptions = (
+  form: SiteForm,
+  errors: FieldErrors,
   update: SiteFormUpdate,
-): { options: AppearanceOptions; choose: AppearanceSetters } => {
+): AppearanceModel => {
+  const fonts = useFontFamilies(form, errors, update);
   const choose =
     <K extends keyof AppearanceChoices>(key: K) =>
     (value: AppearanceChoices[K]): void =>
       update({ [key]: value }, `brand.${key}`);
   return {
-    options: OPTIONS,
-    choose: {
-      palette: choose("palette"),
-      theme: choose("theme"),
-      width: choose("width"),
-      home_layout: choose("home_layout"),
-      font: choose("font"),
-      code_theme: choose("code_theme"),
-      card_style: choose("card_style"),
+    data: { options: OPTIONS, font: fonts.font },
+    actions: {
+      chooseFont: fonts.chooseFont,
+      choose: {
+        palette: choose("palette"),
+        theme: choose("theme"),
+        width: choose("width"),
+        home_layout: choose("home_layout"),
+        font: choose("font"),
+        code_theme: choose("code_theme"),
+        card_style: choose("card_style"),
+      },
     },
   };
 };

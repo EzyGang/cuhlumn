@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use cuhlumn_api::{post::slug::Slug, site::indexnow_key::IndexNowKey};
 use percent_encoding::{AsciiSet, CONTROLS, percent_decode_str, utf8_percent_encode};
 
-use crate::media::name::MediaName;
+use crate::{fonts::FontName, media::name::MediaName};
 
 /// A public address of a blog.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,11 +42,16 @@ pub enum Route {
     EntryCard(Slug),
     /// `/media/{name}`: an uploaded image.
     Media(MediaName),
+    /// `/_fonts/{name}`: a library font file. Slugs have no `_`, so no post has this path.
+    Font(FontName),
     /// `/{key}.txt`: the IndexNow key file when `key` is the key of the site.
     KeyFile(IndexNowKey),
     /// Any other path.
     NotFound,
 }
+
+/// The path of library font files after the leading slash.
+const FONTS_PREFIX: &str = "_fonts/";
 
 /// Percent-decodes a request path. A path that does not decode to UTF-8 stays as it is.
 #[must_use]
@@ -103,6 +108,9 @@ impl Route {
         }
         if let Some(name) = rest.strip_prefix("media/") {
             return MediaName::new(name).map_or(Self::NotFound, Self::Media);
+        }
+        if let Some(name) = rest.strip_prefix(FONTS_PREFIX) {
+            return FontName::new(name).map_or(Self::NotFound, Self::Font);
         }
         if let Some(tag) = rest.strip_prefix("tags/") {
             return match tag.strip_suffix('/') {
@@ -161,6 +169,10 @@ mod tests {
             Route::parse("/media/0123456789abcdef0123456789abcdef.png"),
             Route::Media(_)
         ));
+        assert!(matches!(
+            Route::parse("/_fonts/Lora-Regular-0a1b2c3d.ttf"),
+            Route::Font(_)
+        ));
     }
 
     #[test]
@@ -179,6 +191,9 @@ mod tests {
     fn rejects_odd_paths() {
         for path in [
             "/media/../../cuhlumn.db",
+            "/_fonts/../cuhlumn.db",
+            "/_fonts/a/b.ttf",
+            "/_fonts/",
             "/media/",
             "/Hello/",
             "/og/",

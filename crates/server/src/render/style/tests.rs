@@ -121,7 +121,7 @@ fn paper_keeps_the_first_release_colors() {
 
 #[test]
 fn site_css_puts_each_variant_under_its_selectors() {
-    let css = site_css(&brand(Palette::Sepia, Width::Normal));
+    let css = site_css(&brand(Palette::Sepia, Width::Normal), &[]);
     let pair = variants(Palette::Sepia);
     let block = |selector: &str| {
         let start = css.find(selector).unwrap() + selector.len();
@@ -145,21 +145,21 @@ fn site_css_puts_each_variant_under_its_selectors() {
 
 #[test]
 fn site_css_sets_width_and_font() {
-    let narrow = site_css(&brand(Palette::Paper, Width::Narrow));
+    let narrow = site_css(&brand(Palette::Paper, Width::Narrow), &[]);
     assert!(narrow.contains("--measure:38rem;"));
     assert!(!narrow.contains("--font-body"));
     let wide = Brand {
         font: Font::Sans,
         ..brand(Palette::Paper, Width::Wide)
     };
-    let css = site_css(&wide);
+    let css = site_css(&wide, &[]);
     assert!(css.contains("--measure:52rem;"));
     assert!(css.contains(":root{--font-body:var(--font-ui)}"));
 }
 
 #[test]
 fn stylesheet_starts_with_the_static_rules() {
-    let css = stylesheet(&Brand::default());
+    let css = stylesheet(&Brand::default(), &[]);
     assert!(css.starts_with(STATIC_CSS));
     assert!(
         !STATIC_CSS.contains("--color-bg:"),

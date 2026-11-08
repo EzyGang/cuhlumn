@@ -10,7 +10,8 @@ The defaults give the look of the first release.
 | Field | Default | Effect |
 | --- | --- | --- |
 | `accent` | `#2563eb` | The accent color for links, buttons, the progress bar, the call-to-action bar, the favicon, and the share images |
-| `font` | `serif` | The text font of posts: `serif` or `sans` |
+| `font` | `serif` | The text font of posts: `serif` or `sans`, or the fallback stack after `font_family` |
+| `font_family` | None | A family from the font library for post text and the interface |
 | `logo` | None | The image in the header and on the share images |
 | `favicon` | None | The browser icon |
 | `og_image` | None | The share image for the home page and other site pages |
@@ -63,8 +64,60 @@ Any accent therefore gives links that meet the WCAG AA contrast level.
 | `serif` | Post text in a book serif: Iowan Old Style, Palatino Linotype, Palatino, Book Antiqua, Charter, or Georgia |
 | `sans` | Post text in the system sans-serif font |
 
-Headings and the interface always use the system sans-serif font.
-The pages load no web fonts.
+Without a blog font, headings and the interface always use the system sans-serif font.
+Without a blog font, the pages load no web fonts.
+
+## Blog font
+
+The `font_family` field selects a family from the [font library](share-images.md#font-library) as the page font.
+The value is a family name, such as `"Lora"`.
+`null` keeps the system fonts.
+
+With a family, `font` selects the fallback stack after the family.
+Post text and the interface then use `"Lora",var(--font-serif)` or `"Lora",var(--font-sans)`.
+Code keeps the monospace font.
+
+### Add a font
+
+1. Open the **Fonts** page of the console.
+2. Upload a TTF, OTF, or TTC file, or import a Google Fonts address.
+3. Open the site settings and select the family in the **Font** control of the **Layout** group.
+
+The **Font** control lists **Serif (system)** and **Sans (system)** first, then the families of the library.
+When you select a family, the **Fallback** choice selects the `serif` or `sans` stack.
+When the stored family is not in the library, the control shows the note "Missing from the font library".
+
+A site write accepts only a family of a library font.
+A value that is equal to the stored value always passes.
+
+### Page output
+
+The site stylesheet gets one `@font-face` rule for each library face of the family.
+
+- The `src` is `url(/_fonts/{name})` with the format `truetype`, `opentype`, or `collection`.
+- The `font-weight` and `font-style` come from the metadata of the face.
+- A variable font declares only the weight of its default instance.
+- A TTC file gives only its first face.
+- Each rule uses `font-display: swap`, so the text shows at once in the fallback font.
+
+The page head preloads only the regular face, with weight 400 and normal style, when the family has one.
+
+### Deleted fonts
+
+You can delete a library font that a site uses.
+The page then uses the `font` stack, and the stylesheet omits the missing family.
+The site can still save its other fields.
+
+### License
+
+The server serves library fonts publicly at `/_fonts/{name}`.
+Use only fonts whose license allows web use, such as Google Fonts under the SIL Open Font License.
+
+### Performance
+
+TTF files can be large.
+Import only the weights and styles that the blog uses.
+For example, `https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400` imports regular, bold, and italic.
 
 ## Themes
 

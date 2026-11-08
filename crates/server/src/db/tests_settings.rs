@@ -2,7 +2,13 @@ use cuhlumn_api::{
     fonts::{FontItem, FontSource},
     post::slug::Slug,
     settings::Scheme,
-    site::{SiteInput, brand::Brand, host::Host, indexnow_key::IndexNowKey, theme::Palette},
+    site::{
+        SiteInput,
+        brand::Brand,
+        host::Host,
+        indexnow_key::IndexNowKey,
+        theme::{Font, Palette},
+    },
 };
 use rusqlite::Connection;
 use serde_json::json;
@@ -128,6 +134,37 @@ fn migration_three_keeps_the_call_to_action() {
 }
 
 #[test]
+fn migration_four_keeps_the_system_font() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut db = Connection::open(dir.path().join("old.db")).unwrap();
+    for sql in &migrations::MIGRATIONS[..3] {
+        db.execute_batch(sql).unwrap();
+    }
+    db.pragma_update(None, "user_version", 3).unwrap();
+    db.execute_batch(
+        "INSERT INTO sites (host, title, description, author, project_name, project_url, cta,
+           lang, indexnow_key, accent, font, links, head, footer, credit, updated_at)
+         VALUES ('harbor.example.com', 'Harbor Notes', '', 'Mara Lind', 'Harbor',
+           'https://harbor.example.com', '', 'en', '0123456789abcdef0123456789abcdef', '#0e7490',
+           'sans', '[]', '', '', 1, 1);",
+    )
+    .unwrap();
+    migrations::apply(&mut db).unwrap();
+    let version: i64 = db
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, 4);
+    let site = sites::get(&db, &harbor()).unwrap().unwrap();
+    assert_eq!(site.brand.font, Font::Sans);
+    assert_eq!(site.brand.font_family, None);
+    let mut input = SiteInput::from(site);
+    input.brand.font_family = Some("Lora".to_owned());
+    sites::put(&mut db, &harbor(), &input, &key(), 2).unwrap();
+    let site = sites::get(&db, &harbor()).unwrap().unwrap();
+    assert_eq!(site.brand.font_family.as_deref(), Some("Lora"));
+}
+
+#[test]
 fn first_token_wins() {
     let (_dir, mut db) = open();
     assert!(settings::set_token_if_empty(&db, "first", 1).unwrap());
@@ -167,6 +204,8 @@ fn fonts_are_listed_and_deleted() {
     };
     fonts::insert(&db, &font).unwrap();
     assert_eq!(fonts::list(&db).unwrap(), std::slice::from_ref(&font));
+    assert!(fonts::has_family(&db, "Noto Sans JP").unwrap());
+    assert!(!fonts::has_family(&db, "Noto Sans").unwrap());
     assert_eq!(fonts::get(&db, &font.name).unwrap(), Some(font.clone()));
     assert!(fonts::delete(&db, &font.name).unwrap());
     assert!(!fonts::delete(&db, &font.name).unwrap());

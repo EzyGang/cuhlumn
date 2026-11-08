@@ -14,6 +14,7 @@ type BrandForm = Pick<SiteForm, Exclude<keyof Brand, "logo" | "favicon" | "og_im
 /** The appearance values of a new site, equal to the defaults of the server. */
 const DEFAULT_APPEARANCE: Omit<BrandForm, "accent" | "links" | "head" | "footer" | "social"> = {
   font: "serif",
+  font_family: null,
   credit: true,
   palette: "paper",
   theme: "system",
@@ -57,6 +58,7 @@ export const emptySiteForm = (): SiteForm => ({
 const brandChoices = (brand: BrandForm): BrandForm => ({
   accent: brand.accent,
   font: brand.font,
+  font_family: brand.font_family,
   links: brand.links.map((link) => ({ label: link.label, url: link.url })),
   head: brand.head,
   footer: brand.footer,
@@ -147,9 +149,17 @@ export const siteFieldPaths = (form: SiteForm): string[] => [
   "lang",
   "home",
   "indexnow_key",
-  ...["accent", "logo", "favicon", "og_image", "links", "head", "footer", "social"].map(
-    (key) => `brand.${key}`,
-  ),
+  ...[
+    "accent",
+    "font_family",
+    "logo",
+    "favicon",
+    "og_image",
+    "links",
+    "head",
+    "footer",
+    "social",
+  ].map((key) => `brand.${key}`),
   ...form.links.flatMap((_, index) => [`brand.links.${index}.label`, `brand.links.${index}.url`]),
   ...form.social.flatMap((_, index) => [`brand.social.${index}`, `brand.social.${index}.url`]),
   "announcement",

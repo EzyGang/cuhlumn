@@ -178,7 +178,8 @@ Use `site set` for changes to an existing site.
 | Field | Default | Meaning |
 | --- | --- | --- |
 | `brand.accent` | `#2563eb` | Accent color, `#rgb` or `#rrggbb`; link colors stay readable automatically |
-| `brand.font` | `serif` | `serif` or `sans` for post text |
+| `brand.font` | `serif` | `serif` or `sans` for post text. With `font_family`, the fallback stack |
+| `brand.font_family` | None | A family name from the font library, such as `"Lora"`. Must exist in the library when it changes |
 | `brand.logo` | None | Header and share card image |
 | `brand.favicon` | None | Browser icon. Without it, the logo or a generated icon is used |
 | `brand.og_image` | None | Share image for the home page |
