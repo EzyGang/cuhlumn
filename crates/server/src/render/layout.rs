@@ -22,6 +22,8 @@ use crate::{
 const THEME_INIT_JS: &str = include_str!("../../assets/theme-init.js");
 const THEME_TOGGLE_JS: &str = include_str!("../../assets/theme-toggle.js");
 const CONTRAST_SVG: &str = include_str!("../../assets/contrast.svg");
+/// The address of the "Published with Cuhlumn" credit link.
+const CREDIT_URL: &str = "https://github.com/EzyGang/cuhlumn";
 
 /// Returns a full HTML document with `body` inside the main element.
 ///
@@ -147,7 +149,7 @@ fn site_foot(blog: &Blog) -> Markup {
                 a href="/llms.txt" { "llms.txt" }
             }
             @if !site.brand.footer.is_empty() { p { (site.brand.footer) } }
-            @if site.brand.credit { p { "Published with Cuhlumn" } }
+            @if site.brand.credit { p { "Published with " a href=(CREDIT_URL) { "Cuhlumn" } } }
         } }
     }
 }

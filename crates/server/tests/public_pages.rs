@@ -71,7 +71,7 @@ async fn home_page_lists_published_posts() {
             r#"href="/about/""#,
             r#"href="https://harbor.example.com""#,
             "twitter:card",
-            "Published with Cuhlumn",
+            r#"Published with <a href="https://github.com/EzyGang/cuhlumn">Cuhlumn</a>"#,
             r#"rel="icon" href="/favicon.svg""#,
             "--color-accent:#0e7490",
             r#"localStorage.getItem("cuhlumn:theme")"#,

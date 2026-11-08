@@ -129,6 +129,7 @@ h2:hover>.heading-link,h3:hover>.heading-link,h2:focus-within>.heading-link,h3:f
 .site-foot{border-top:1px solid var(--color-border);padding:2rem 0 2.5rem;font-size:.875rem;color:var(--color-text-muted)}
 .site-foot p{margin:0 0 .75rem}
 .site-foot strong{color:var(--color-text)}
+.site-foot p a{color:inherit}
 .foot-links{display:flex;flex-wrap:wrap;gap:.25rem 1.25rem;margin:0 0 .75rem}
 .foot-links a{display:inline-block;padding:.25rem 0;color:inherit}
 .social-links{list-style:none;display:flex;flex-wrap:wrap;gap:.25rem;margin:0 0 .75rem;padding:0}
