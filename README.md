@@ -300,6 +300,7 @@ IndexNow is a setting of each site, and fonts for share images are uploaded in t
 | `cuhlumn media upload <image>` | Upload an image and print its `/media/` path |
 | `cuhlumn announce set "<text>"` | Show an announcement bar on every page |
 | `cuhlumn announce clear` | Remove the announcement bar |
+| `cuhlumn font import <url>` | Import a Google font into the server library |
 | `cuhlumn install-skill` | Install the agent skill |
 
 [Read the complete CLI reference](https://cuhlumn.ezygang.digital/cli/).

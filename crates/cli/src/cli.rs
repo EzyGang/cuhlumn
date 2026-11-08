@@ -1,6 +1,7 @@
 //! Command-line arguments.
 
 pub mod announce;
+pub mod font;
 
 use std::path::PathBuf;
 
@@ -10,7 +11,10 @@ use cuhlumn_api::{
     site::{host::Host, link::AbsoluteUrl},
 };
 
-use crate::{assign::Assignment, cli::announce::AnnounceCommand};
+use crate::{
+    assign::Assignment,
+    cli::{announce::AnnounceCommand, font::FontCommand},
+};
 
 /// Manages blogs on a cuhlumn server through its HTTP API.
 ///
@@ -56,6 +60,11 @@ pub enum Command {
     /// Shows, sets, and clears the announcement bar of the site.
     #[command(subcommand)]
     Announce(AnnounceCommand),
+    /// Lists, imports, uploads, and deletes fonts of the server library. Needs no site.
+    ///
+    /// The library belongs to the server, and every site can use its families.
+    #[command(subcommand)]
+    Font(FontCommand),
     /// Prints the agent skill that explains this CLI.
     Skill,
     /// Installs the agent skill into AI agents with the `skills` installer from npm.
@@ -215,6 +224,8 @@ Examples:
   cuhlumn media upload diagram.png
   cuhlumn post push sqlite-backups.md --publish
   cuhlumn post get sqlite-backups --markdown > sqlite-backups.md
+  cuhlumn font import 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400'
+  cuhlumn site set brand.font_family=Lora
   cuhlumn announce set \"We moved to a new server.\" --until 2026-12-01T00:00:00Z
   cuhlumn skill";
 
