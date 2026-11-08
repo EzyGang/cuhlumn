@@ -41,7 +41,7 @@ head: string,
  */
 footer: string, 
 /**
- * Shows the "Published with Cuhlumn" credit in the footer.
+ * Shows the "Published with Cuhlumn" credit, with a link to the GitHub repository, in the footer.
  */
 credit: boolean, palette: Palette, theme: Theme, 
 /**

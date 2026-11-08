@@ -18,7 +18,7 @@ The defaults give the look of the first release.
 | `links` | None | Up to 8 header links with a label and an address |
 | `head` | Empty | Raw HTML at the end of every page `<head>`, up to 20,000 bytes |
 | `footer` | Empty | A text line in the footer, up to 500 characters |
-| `credit` | `true` | Shows "Published with Cuhlumn" in the footer |
+| `credit` | `true` | Shows "Published with Cuhlumn" in the footer, with a link to the Cuhlumn repository on GitHub |
 | `palette` | `paper` | The colors of backgrounds and text |
 | `theme` | `system` | The theme that the page shows first |
 | `theme_toggle` | `true` | Shows the theme button in the header |

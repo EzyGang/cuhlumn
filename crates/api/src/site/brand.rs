@@ -37,7 +37,7 @@ pub struct Brand {
     /// Footer text, at most 500 characters.
     #[serde(deserialize_with = "text::de_max_chars::<_, FOOTER_MAX>")]
     pub footer: String,
-    /// Shows the "Published with Cuhlumn" credit in the footer.
+    /// Shows the "Published with Cuhlumn" credit, with a link to the GitHub repository, in the footer.
     pub credit: bool,
     pub palette: Palette,
     pub theme: Theme,
