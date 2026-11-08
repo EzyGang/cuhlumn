@@ -71,6 +71,8 @@ Add fonts for scripts such as Japanese, Arabic, or Devanagari to show titles in 
 
 The font library is the `fonts/` folder in the data folder.
 Manage it on the **Fonts** page of the console, or through the [fonts API](../reference/fonts.md).
+The library also supplies [blog fonts](appearance.md#blog-font).
+Share images still use Inter first, and library fonts add glyphs for other scripts.
 
 - Upload a TTF, OTF, or TTC file of up to 20 MiB.
 - Or import a family from Google Fonts with a `https://fonts.google.com/specimen/{Family}` address or a `https://fonts.googleapis.com/css2?family=…` address.

@@ -37,7 +37,7 @@ export const useSiteSettings = (): SiteSettingsContextValue => {
   const form = useSignal<SiteForm>(emptySiteForm());
   const errors = useSignal<FieldErrors>({});
   const { update, actions, ...state } = useSiteFormState(form, errors);
-  const appearance = useAppearanceOptions(update);
+  const appearance = useAppearanceOptions(form.value, errors.value, update);
   const social = useSocialLinks(form, errors.value, update);
   const announcement = useAnnouncement(form, update);
   const images = useSiteImages(host, form.value, errors.value, actions.text);
@@ -47,14 +47,14 @@ export const useSiteSettings = (): SiteSettingsContextValue => {
       ...formData(form.value, errors.value, images),
       ...state,
       mode: host === null ? "create" : "edit",
-      options: appearance.options,
+      ...appearance.data,
       social: social.social,
       announcement: announcement.announcement,
     },
     status: { load: persistence.load, saving: persistence.saving },
     actions: {
       ...actions,
-      choose: appearance.choose,
+      ...appearance.actions,
       addSocial: social.addSocial,
       announcement: announcement.actions,
       save: persistence.save,

@@ -53,6 +53,20 @@ pub fn get(connection: &Connection, name: &str) -> Result<Option<FontItem>, DbEr
     Ok(font)
 }
 
+/// Returns `true` when a library font has the family name `family`.
+///
+/// # Errors
+///
+/// Returns [`DbError`] when the query fails.
+pub fn has_family(connection: &Connection, family: &str) -> Result<bool, DbError> {
+    let found = connection.query_row(
+        "SELECT EXISTS (SELECT 1 FROM fonts, json_each(fonts.families) WHERE json_each.value = ?1)",
+        [family],
+        |row| row.get(0),
+    )?;
+    Ok(found)
+}
+
 /// Deletes the record of a library font. Returns `false` when it does not exist.
 ///
 /// # Errors

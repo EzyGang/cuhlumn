@@ -14,7 +14,16 @@ import type { Width } from "./Width";
 /**
  * The look settings of a site, shown as "Appearance" in the console.
  */
-export type Brand = { accent: Accent, font: Font, logo: LinkUrl | null, favicon: LinkUrl | null, 
+export type Brand = { accent: Accent, 
+/**
+ * The fallback font stack, and the whole page font when `font_family` is `None`.
+ */
+font: Font, 
+/**
+ * A family of the font library for the page text, 1 to 100 characters.
+ * `None` keeps the system font stack of `font`.
+ */
+font_family: string | null, logo: LinkUrl | null, favicon: LinkUrl | null, 
 /**
  * The share image for pages that have no share image of their own.
  */

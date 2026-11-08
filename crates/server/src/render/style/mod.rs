@@ -1,6 +1,7 @@
-//! The colors of a blog: WCAG contrast, the palettes, and the stylesheet.
+//! The colors and fonts of a blog: WCAG contrast, the palettes, the blog font, and the stylesheet.
 
 pub mod css;
+pub mod font;
 pub mod palettes;
 #[cfg(test)]
 mod tests;

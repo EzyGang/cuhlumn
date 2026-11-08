@@ -13,8 +13,11 @@ use rusqlite::Connection;
 
 use crate::{
     config::Config,
-    db::{Database, DbError, sessions, settings as stored, sites, unix_now},
-    fonts::FontStore,
+    db::{Database, DbError, fonts as font_records, sessions, settings as stored, sites, unix_now},
+    fonts::{
+        FontStore,
+        faces::{self, LibraryFace},
+    },
     indexnow::IndexNow,
     media::MediaStore,
     og,
@@ -50,6 +53,8 @@ struct Inner {
     db: Database,
     media: MediaStore,
     fonts: FontStore,
+    /// The faces of the library fonts, for blog stylesheets.
+    faces: RwLock<Arc<[LibraryFace]>>,
     cache: PageCache,
     indexnow: IndexNow,
 }
@@ -92,11 +97,14 @@ impl AppState {
         tracing::debug!(expired, "deleted expired sessions");
         let settings = Settings::resolve(&config, &stored);
         og::fonts::init(fonts_root.clone());
+        let fonts = FontStore::new(fonts_root)?;
+        let library = load_faces(&db, &fonts).await?;
         Ok(Self {
             inner: Arc::new(Inner {
                 settings: RwLock::new(Arc::new(settings)),
                 media: MediaStore::new(media_root),
-                fonts: FontStore::new(fonts_root)?,
+                fonts,
+                faces: RwLock::new(library),
                 cache: PageCache::default(),
                 config,
                 db,
@@ -179,15 +187,32 @@ impl AppState {
         Ok(owner.is_none())
     }
 
-    /// Loads the font library again for share images and drops every cached page.
+    /// Loads the font library again for share images and blog stylesheets, and drops every cached page.
     ///
     /// # Errors
     ///
-    /// Returns [`tokio::task::JoinError`] when the blocking reload task fails.
-    pub async fn fonts_changed(&self) -> Result<(), tokio::task::JoinError> {
+    /// Returns [`DbError`] when the font list cannot be read or a blocking task fails.
+    pub async fn fonts_changed(&self) -> Result<(), DbError> {
+        let library = load_faces(self.db(), self.fonts()).await?;
         tokio::task::spawn_blocking(og::fonts::reload).await?;
+        *self
+            .inner
+            .faces
+            .write()
+            .unwrap_or_else(PoisonError::into_inner) = library;
         self.cache().clear();
         Ok(())
+    }
+
+    /// Returns the faces of every library font.
+    #[must_use]
+    pub fn library_faces(&self) -> Arc<[LibraryFace]> {
+        let faces = self
+            .inner
+            .faces
+            .read()
+            .unwrap_or_else(PoisonError::into_inner);
+        Arc::clone(&faces)
     }
 
     /// Returns the database.
@@ -219,6 +244,19 @@ impl AppState {
     pub fn indexnow(&self) -> &IndexNow {
         &self.inner.indexnow
     }
+}
+
+/// Reads the faces of every recorded library font.
+async fn load_faces(db: &Database, fonts: &FontStore) -> Result<Arc<[LibraryFace]>, DbError> {
+    let names: Vec<String> = db
+        .call(|connection| font_records::list(connection))
+        .await?
+        .into_iter()
+        .map(|font| font.name)
+        .collect();
+    let root = fonts.root().to_owned();
+    let faces = tokio::task::spawn_blocking(move || faces::load(&root, &names)).await?;
+    Ok(Arc::from(faces))
 }
 
 async fn create_folder(path: &Path) -> Result<PathBuf, StateError> {

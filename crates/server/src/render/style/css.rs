@@ -3,14 +3,17 @@
 use cuhlumn_api::site::{
     accent::Accent,
     brand::Brand,
-    theme::{Font, Palette, Width},
+    theme::{Palette, Width},
 };
 
-use crate::render::{
-    code_theme::{self, Variant},
-    style::{
-        BLACK, Rgb, WHITE,
-        palettes::{Colors, text_contrast, variants},
+use crate::{
+    fonts::faces::LibraryFace,
+    render::{
+        code_theme::{self, Variant},
+        style::{
+            BLACK, Rgb, WHITE, font,
+            palettes::{Colors, text_contrast, variants},
+        },
     },
 };
 
@@ -49,18 +52,19 @@ impl LinkColors {
 
 /// Returns the full stylesheet of a site: [`STATIC_CSS`] and then [`site_css`].
 #[must_use]
-pub fn stylesheet(brand: &Brand) -> String {
+pub fn stylesheet(brand: &Brand, faces: &[LibraryFace]) -> String {
     let mut css = STATIC_CSS.to_owned();
-    css.push_str(&site_css(brand));
+    css.push_str(&site_css(brand, faces));
     css
 }
 
-/// Returns the rules that come from the brand: palette, accent, width, body font, and code colors.
+/// Returns the rules that come from the brand: palette, accent, width, fonts, and code colors.
 ///
+/// `faces` are the library faces of the brand family, from [`font::family_faces`].
 /// The light variant is the default.
 /// The dark variant applies under [`DARK_CHOICE`], and under [`DARK_SYSTEM`] when the system is dark.
 #[must_use]
-pub fn site_css(brand: &Brand) -> String {
+pub fn site_css(brand: &Brand, faces: &[LibraryFace]) -> String {
     let pair = variants(brand.palette);
     let links = LinkColors::for_accent(&brand.accent, brand.palette);
     let light = links.light.hex();
@@ -71,9 +75,7 @@ pub fn site_css(brand: &Brand) -> String {
         WHITE.hex(),
         measure(brand.width),
     );
-    if brand.font == Font::Sans {
-        css.push_str(":root{--font-body:var(--font-ui)}\n");
-    }
+    css.push_str(&font::rules(brand, faces));
     css.push_str(&code_theme::rules(brand.code_theme, Variant::Light, ""));
     let dark = format!(
         "{}--color-link:{};color-scheme:dark",

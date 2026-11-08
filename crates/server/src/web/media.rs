@@ -1,14 +1,12 @@
 //! Uploaded images. Their names come from their content, so they never change.
 
-use axum::{
-    body::Body,
-    http::{HeaderValue, header},
-    response::{IntoResponse, Response},
-};
+use axum::response::Response;
 use cuhlumn_api::site::host::Host;
-use tokio_util::io::ReaderStream;
 
-use crate::media::{MediaError, MediaStore, name::MediaName};
+use crate::{
+    media::{MediaError, MediaStore, name::MediaName},
+    web::stream,
+};
 
 /// Streams an uploaded image of the site at `host`. Returns `None` when the file does not exist.
 ///
@@ -23,29 +21,7 @@ pub async fn serve(
     let Some(file) = media.open(host, name).await? else {
         return Ok(None);
     };
-    let length = match file.metadata().await {
-        Ok(metadata) => Some(metadata.len()),
-        Err(err) => {
-            tracing::warn!(%host, %name, error = %err, "media file size is unknown, the response is chunked");
-            None
-        }
-    };
-    let mut response = Body::from_stream(ReaderStream::new(file)).into_response();
-    let headers = response.headers_mut();
-    headers.insert(
-        header::CONTENT_TYPE,
-        HeaderValue::from_static(name.format().content_type()),
-    );
-    headers.insert(
-        header::CACHE_CONTROL,
-        HeaderValue::from_static("public, max-age=31536000, immutable"),
-    );
-    headers.insert(
-        header::X_CONTENT_TYPE_OPTIONS,
-        HeaderValue::from_static("nosniff"),
-    );
-    if let Some(length) = length {
-        headers.insert(header::CONTENT_LENGTH, HeaderValue::from(length));
-    }
-    Ok(Some(response))
+    Ok(Some(
+        stream::immutable(file, name.format().content_type(), name).await,
+    ))
 }

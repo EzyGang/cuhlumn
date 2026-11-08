@@ -128,6 +128,7 @@ fn render(blog: &Blog, route: Route, query: Option<&str>) -> Outcome {
         | Route::SiteCard
         | Route::EntryCard(_)
         | Route::Media(_)
+        | Route::Font(_)
         | Route::NotFound => Outcome::Missing,
     }
 }

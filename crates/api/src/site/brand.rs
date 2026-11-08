@@ -18,7 +18,12 @@ use crate::{
 #[serde(default, deny_unknown_fields)]
 pub struct Brand {
     pub accent: Accent,
+    /// The fallback font stack, and the whole page font when `font_family` is `None`.
     pub font: Font,
+    /// A family of the font library for the page text, 1 to 100 characters.
+    /// `None` keeps the system font stack of `font`.
+    #[serde(deserialize_with = "de_font_family")]
+    pub font_family: Option<String>,
     pub logo: Option<LinkUrl>,
     pub favicon: Option<LinkUrl>,
     /// The share image for pages that have no share image of their own.
@@ -55,12 +60,14 @@ const LINKS_MAX: usize = 8;
 const HEAD_MAX: usize = 20_000;
 const FOOTER_MAX: usize = 500;
 const SOCIAL_MAX: usize = 12;
+const FONT_FAMILY_MAX: usize = 100;
 
 impl Default for Brand {
     fn default() -> Self {
         Self {
             accent: Accent::default(),
             font: Font::default(),
+            font_family: None,
             logo: None,
             favicon: None,
             og_image: None,
@@ -96,4 +103,21 @@ where
         }
     }
     Ok(links)
+}
+
+/// Deserializes a library family name: trimmed, 1 to 100 characters, without any control character.
+fn de_font_family<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let Some(value) = Option::<String>::deserialize(deserializer)? else {
+        return Ok(None);
+    };
+    let value = text::required(&value, FONT_FAMILY_MAX).map_err(D::Error::custom)?;
+    match value.chars().find(|character| character.is_control()) {
+        Some(character) => Err(D::Error::custom(text::TextError::ControlChar {
+            code: u32::from(character),
+        })),
+        None => Ok(Some(value)),
+    }
 }

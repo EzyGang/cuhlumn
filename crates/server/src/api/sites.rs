@@ -9,7 +9,7 @@ use rusqlite::Connection;
 
 use crate::{
     api::{auth::Admin, error::ApiError, json::Json, path::SitePath},
-    db::{posts, sites, unix_now},
+    db::{fonts, posts, sites, unix_now},
     state::AppState,
 };
 
@@ -46,7 +46,8 @@ pub async fn get(
 ///
 /// Returns [`ApiError::Conflict`] when the domain or an alias belongs to another site,
 /// [`ApiError::FieldConflict`] when it is the console host,
-/// and [`ApiError::Validation`] when `home` does not name a page of the site.
+/// and [`ApiError::Validation`] when `home` does not name a page of the site
+/// or a new `brand.font_family` is not a family of the font library.
 pub async fn put(
     _admin: Admin,
     State(state): State<AppState>,
@@ -60,6 +61,7 @@ pub async fn put(
         .call(move |db| {
             check_names(db, &host, &input.aliases)?;
             check_home(db, &host, input.home.as_ref())?;
+            check_font_family(db, &host, input.brand.font_family.as_deref())?;
             sites::put(db, &host, &input, &new_key, unix_now())?;
             existing(db, &host)
         })
@@ -153,6 +155,26 @@ fn check_home(db: &Connection, host: &Host, home: Option<&Slug>) -> Result<(), A
         None => Err(ApiError::validation(
             "home",
             format!("the site has no page {slug}"),
+        )),
+    }
+}
+
+/// Rejects a font family that changes to a family that the font library does not have.
+///
+/// The stored value always passes, so a site whose library font was deleted can still save other fields.
+fn check_font_family(db: &Connection, host: &Host, family: Option<&str>) -> Result<(), ApiError> {
+    let Some(family) = family else {
+        return Ok(());
+    };
+    if fonts::has_family(db, family)? {
+        return Ok(());
+    }
+    let stored = sites::get(db, host)?.and_then(|site| site.brand.font_family);
+    match stored.as_deref() == Some(family) {
+        true => Ok(()),
+        false => Err(ApiError::validation(
+            "brand.font_family",
+            format!("the font library has no family {family}"),
         )),
     }
 }

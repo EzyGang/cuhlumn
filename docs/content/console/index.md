@@ -77,12 +77,12 @@ See [Server settings reference](../reference/settings.md).
 
 ## Font library
 
-The **Fonts** page manages the extra fonts of the share images.
+The **Fonts** page manages the fonts of the share images and the blog fonts.
 
 - **Choose font files** uploads TTF, OTF, or TTC files, up to 20 MiB each.
 - **Import** downloads the fonts of a Google Fonts address, such as `https://fonts.google.com/specimen/Noto+Sans+JP`.
 - The table shows the families, the source, the size, and the time of each font.
-- **Delete** asks for a confirmation. Share images that need the characters of the font then use other fonts.
+- **Delete** asks for a confirmation. Share images that need the characters of the font then use other fonts. Blogs that use the family fall back to their system stack.
 
 See [Share images](../platform/share-images.md#fonts).
 
@@ -115,6 +115,12 @@ See [Announcements](../platform/announcements.md).
 | Social | Profile links, **Show in header** |
 | Share image | Generated card, **Date and reading time** |
 | Page extras | Head HTML, footer, credit |
+
+The **Font** control in the **Layout** group lists **Serif (system)**, **Sans (system)**, and the families of the font library.
+With a family, the **Fallback** choice selects the serif or sans system stack.
+A family that is not in the library shows the note "Missing from the font library".
+A link opens the **Fonts** page to add fonts.
+See [Blog font](../platform/appearance.md#blog-font).
 
 **Choose image** next to the logo, favicon, and share image fields opens a dialog.
 

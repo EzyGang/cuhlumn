@@ -16,12 +16,17 @@ pub mod web;
 use axum::{
     Router,
     extract::{Request, State},
-    http::StatusCode,
+    http::{Method, StatusCode},
     response::Response,
 };
 use tower_http::trace::TraceLayer;
 
-use crate::{state::AppState, web::request::request_host};
+use crate::{
+    fonts::FontName,
+    render::style::font::FONTS_PATH,
+    state::AppState,
+    web::{request::request_host, route::decode_path},
+};
 
 /// Builds the router of the single listener, for every host.
 ///
@@ -61,7 +66,20 @@ async fn site(State(state): State<AppState>, request: Request) -> Response {
 }
 
 async fn console_only(State(state): State<AppState>, request: Request) -> Response {
-    console::serve(&state, request.method(), request.uri().path())
+    console_or_font(&state, request.method(), request.uri().path()).await
+}
+
+/// Answers a console request. GET and HEAD under `/_fonts/` get library font files, so the post preview can load blog fonts.
+async fn console_or_font(state: &AppState, method: &Method, path: &str) -> Response {
+    if let Some(name) = decode_path(path).strip_prefix(FONTS_PATH)
+        && matches!(*method, Method::GET | Method::HEAD)
+    {
+        return match FontName::new(name) {
+            Ok(name) => web::send_font(state, &name).await,
+            Err(_) => web::plain(StatusCode::NOT_FOUND, "No such file.".to_owned()),
+        };
+    }
+    console::serve(state, method, path)
 }
 
 async fn site_or_console(State(state): State<AppState>, request: Request) -> Response {
@@ -69,7 +87,7 @@ async fn site_or_console(State(state): State<AppState>, request: Request) -> Res
         return web::public(state, request).await;
     };
     match state.serves_console(&host).await {
-        Ok(true) => console::serve(&state, request.method(), request.uri().path()),
+        Ok(true) => console_or_font(&state, request.method(), request.uri().path()).await,
         Ok(false) => web::public(state, request).await,
         Err(err) => {
             tracing::error!(%host, error = %err, "console host check failed");

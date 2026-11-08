@@ -1,10 +1,12 @@
 //! The public side: each request gets the blog that its host names.
 
 pub mod cache;
+mod fonts;
 mod media;
 mod pages;
 pub mod request;
 pub mod route;
+mod stream;
 
 use std::sync::Arc;
 
@@ -26,8 +28,9 @@ use crate::{
         posts::{self, Visibility},
         sites, unix_now,
     },
+    fonts::FontName,
     media::name::MediaName,
-    render::{blog::Blog, not_found},
+    render::{blog::Blog, not_found, style::font::family_faces},
     state::AppState,
     web::{
         pages::Outcome,
@@ -39,7 +42,7 @@ use crate::{
 /// Answers a GET or HEAD request to a blog host or to an unknown host.
 ///
 /// Successful pages come from the page cache, or are built once and stored there.
-/// An image request loads only the site, not its posts.
+/// An image or font request loads only the site, not its posts.
 pub async fn public(state: AppState, request: Request) -> Response {
     let (parts, _body) = request.into_parts();
     if !matches!(parts.method, Method::GET | Method::HEAD) {
@@ -63,7 +66,7 @@ pub async fn public(state: AppState, request: Request) -> Response {
     let generation = state.cache().generation(&host);
     let settings = state.settings();
     let scheme = settings.scheme();
-    let with_posts = !matches!(route, Route::Media(_));
+    let with_posts = !matches!(route, Route::Media(_) | Route::Font(_));
     let name = host.clone();
     let load = move |db: &mut Connection| lookup(db, scheme, &name, with_posts);
     let (site, posts) = match state.db().call(load).await {
@@ -81,10 +84,13 @@ pub async fn public(state: AppState, request: Request) -> Response {
             return server_error();
         }
     };
-    if let Route::Media(name) = &route {
-        return send_media(&state, &host, name).await;
+    match &route {
+        Route::Media(name) => return send_media(&state, &host, name).await,
+        Route::Font(name) => return send_font(&state, name).await,
+        _ => (),
     }
-    let blog = Arc::new(Blog::new(site, settings.origin(&host), posts));
+    let faces = family_faces(&site.brand, &state.library_faces());
+    let blog = Arc::new(Blog::new(site, settings.origin(&host), posts, faces));
     let query = parts.uri.query().map(str::to_owned);
     match pages::build(&state, Arc::clone(&blog), route, query).await {
         Ok(Outcome::Page(cached)) => {
@@ -136,6 +142,20 @@ async fn send_media(state: &AppState, host: &Host, name: &MediaName) -> Response
         Ok(None) => plain(StatusCode::NOT_FOUND, "No such file.".to_owned()),
         Err(err) => {
             tracing::error!(%host, error = %err, "media file cannot be opened");
+            server_error()
+        }
+    }
+}
+
+/// Streams a library font file, or answers 404 in plain text when it does not exist.
+///
+/// The console hosts call it too, so the post preview of the console can load blog fonts.
+pub async fn send_font(state: &AppState, name: &FontName) -> Response {
+    match fonts::serve(state.fonts(), name).await {
+        Ok(Some(response)) => response,
+        Ok(None) => plain(StatusCode::NOT_FOUND, "No such file.".to_owned()),
+        Err(err) => {
+            tracing::error!(%name, error = %err, "font file cannot be opened");
             server_error()
         }
     }

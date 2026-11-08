@@ -11,7 +11,11 @@ use crate::{
         initial,
         meta::Head,
         schema, social,
-        style::{css::stylesheet, palettes::variants},
+        style::{
+            css::stylesheet,
+            font::{FONTS_PATH, regular},
+            palettes::variants,
+        },
     },
 };
 
@@ -45,7 +49,10 @@ pub fn page(blog: &Blog, head: &Head<'_>, body: Markup) -> String {
                 @if let Some(data) = &head.schema { (schema::script(data)) }
                 @if brand.theme_toggle { script { (PreEscaped(THEME_INIT_JS)) } }
                 @if let Some(bar) = &bar { (bar.head()) }
-                style { (PreEscaped(stylesheet(brand))) }
+                @if let Some(face) = regular(&blog.faces) {
+                    link rel="preload" href={ (FONTS_PATH) (face.file) } as="font" type=(face.file.content_type()) crossorigin;
+                }
+                style { (PreEscaped(stylesheet(brand, &blog.faces))) }
                 (PreEscaped(&brand.head))
             }
             body {

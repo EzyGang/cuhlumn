@@ -10,9 +10,12 @@ use cuhlumn_api::{
     },
 };
 
-use crate::render::{
-    clip, day,
-    markdown::{self, Doc},
+use crate::{
+    fonts::faces::LibraryFace,
+    render::{
+        clip, day,
+        markdown::{self, Doc},
+    },
 };
 
 /// A site and its published posts, newest first.
@@ -20,6 +23,8 @@ pub struct Blog {
     pub site: Site,
     /// The site root without a trailing slash, such as `https://blog.example.com`.
     pub origin: String,
+    /// The library faces of the brand font family. Empty when the site uses a system font.
+    pub faces: Vec<LibraryFace>,
     entries: Vec<Entry>,
 }
 
@@ -41,8 +46,10 @@ const WORDS_PER_MINUTE: usize = 220;
 
 impl Blog {
     /// Holds `posts`, which must be the published posts of `site`, newest first.
+    ///
+    /// `faces` are the library faces of the brand font family.
     #[must_use]
-    pub fn new(site: Site, origin: String, posts: Vec<Post>) -> Self {
+    pub fn new(site: Site, origin: String, posts: Vec<Post>, faces: Vec<LibraryFace>) -> Self {
         let entries = posts
             .into_iter()
             .map(|post| Entry {
@@ -53,6 +60,7 @@ impl Blog {
         Self {
             site,
             origin,
+            faces,
             entries,
         }
     }

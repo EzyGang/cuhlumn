@@ -1,10 +1,11 @@
 //! The font library: font files in `{data}/fonts/` that share images use next to the system fonts.
 
+pub mod faces;
 pub mod google;
 pub mod inspect;
 
 use std::{
-    io,
+    fmt, io,
     path::{Path, PathBuf},
     sync::atomic::{AtomicU64, Ordering},
     time::Duration,
@@ -114,6 +115,26 @@ impl FontStore {
         google::download(&self.client, url).await
     }
 
+    /// Opens a library font file for reading. Returns `None` when it does not exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FontError::Io`] when the file exists but cannot be opened.
+    pub async fn open(&self, name: &FontName) -> Result<Option<tokio::fs::File>, FontError> {
+        let path = self.root.join(name.as_str());
+        match tokio::fs::File::open(&path).await {
+            Ok(file) => Ok(Some(file)),
+            Err(err) if err.kind() == io::ErrorKind::NotFound => Ok(None),
+            Err(source) => Err(FontError::Io { path, source }),
+        }
+    }
+
+    /// Returns the font folder.
+    #[must_use]
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
     /// Deletes a font file. A missing file is not an error.
     ///
     /// # Errors
@@ -153,6 +174,38 @@ impl FontName {
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Returns the media type of the file, from its extension.
+    #[must_use]
+    pub fn content_type(&self) -> &'static str {
+        match self.extension() {
+            "otf" => "font/otf",
+            "ttc" => "font/collection",
+            _ => "font/ttf",
+        }
+    }
+
+    /// Returns the format name of the CSS `src` descriptor, from the extension.
+    #[must_use]
+    pub fn css_format(&self) -> &'static str {
+        match self.extension() {
+            "otf" => "opentype",
+            "ttc" => "collection",
+            _ => "truetype",
+        }
+    }
+
+    fn extension(&self) -> &str {
+        self.0
+            .rsplit_once('.')
+            .map_or("", |(_, extension)| extension)
+    }
+}
+
+impl fmt::Display for FontName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
     }
 }
 
