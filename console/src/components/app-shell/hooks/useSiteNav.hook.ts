@@ -19,6 +19,11 @@ const SECTIONS: readonly SectionRule[] = [
       path === `${base}/posts` || path.startsWith(`${base}/posts/`) || path === `${base}/new-post`,
   },
   { label: "Media", suffix: "/media", matches: (path, base): boolean => path === `${base}/media` },
+  {
+    label: "Analytics",
+    suffix: "/analytics",
+    matches: (path, base): boolean => path === `${base}/analytics`,
+  },
   { label: "Settings", suffix: "", matches: (path, base): boolean => path === base },
 ];
 

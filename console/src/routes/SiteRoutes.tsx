@@ -1,6 +1,7 @@
 import type { JSX } from "preact";
 import { Redirect, Route, Switch } from "wouter-preact";
 import { AppShellContainer } from "../components/app-shell/containers/AppShell.container";
+import { AnalyticsPage } from "../pages/Analytics.page";
 import { FontsPage } from "../pages/Fonts.page";
 import { MediaPage } from "../pages/Media.page";
 import { PostEditorPage } from "../pages/PostEditor.page";
@@ -29,6 +30,7 @@ export const SiteRoutes = (): JSX.Element => (
         {(params) => <PostEditorPage key={`edit:${params.host}/${params.slug}`} />}
       </Route>
       <Route path="/sites/:host/media">{(params) => <MediaPage key={params.host} />}</Route>
+      <Route path="/sites/:host/analytics">{(params) => <AnalyticsPage key={params.host} />}</Route>
       <Route>
         <Redirect to="/" replace />
       </Route>

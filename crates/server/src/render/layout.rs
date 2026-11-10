@@ -22,6 +22,8 @@ use crate::{
 const THEME_INIT_JS: &str = include_str!("../../assets/theme-init.js");
 const THEME_TOGGLE_JS: &str = include_str!("../../assets/theme-toggle.js");
 const CONTRAST_SVG: &str = include_str!("../../assets/contrast.svg");
+/// The analytics beacon: one `POST /_hit` for each page view.
+const HIT_JS: &str = include_str!("../../assets/hit.js");
 /// The address of the "Published with Cuhlumn" credit link.
 const CREDIT_URL: &str = "https://github.com/EzyGang/cuhlumn";
 
@@ -65,6 +67,7 @@ pub fn page(blog: &Blog, head: &Head<'_>, body: Markup) -> String {
                 (site_foot(blog))
                 @if brand.theme_toggle { script { (PreEscaped(THEME_TOGGLE_JS)) } }
                 @if let Some(bar) = &bar { (bar.script()) }
+                script { (PreEscaped(HIT_JS.trim_end())) }
             }
         }
     }

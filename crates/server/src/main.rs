@@ -7,8 +7,10 @@ use std::{
 };
 
 use anyhow::Context;
+use axum::{Router, extract::connect_info::IntoMakeServiceWithConnectInfo};
 use cuhlumn_server::{
     admin_router,
+    analytics::Analytics,
     config::{Config, Task},
     healthcheck, public_router, router,
     state::AppState,
@@ -54,53 +56,70 @@ async fn serve(config: Config) -> anyhow::Result<()> {
         tracing::warn!("the server has no admin token yet, open the console to set the token");
     }
     let listener = bind(address, "PORT").await?;
-    let Some(admin_address) = admin_address else {
-        tracing::info!(
+    let admin_listener = match admin_address {
+        Some(admin_address) => Some(bind(admin_address, "CUHLUMN_ADMIN_ADDR").await?),
+        None => None,
+    };
+    match admin_address {
+        Some(admin_address) => tracing::info!(
+            %address,
+            %admin_address,
+            data = %data.display(),
+            version = env!("CARGO_PKG_VERSION"),
+            "cuhlumn-server is listening, the blogs on the public address and the console on the admin address"
+        ),
+        None => tracing::info!(
             %address,
             data = %data.display(),
             version = env!("CARGO_PKG_VERSION"),
             "cuhlumn-server is listening"
-        );
-        axum::serve(listener, router(state))
-            .with_graceful_shutdown(shutdown())
-            .await
-            .context("the server stopped with an error")?;
-        tracing::info!("cuhlumn-server stopped");
-        return Ok(());
-    };
-    let admin_listener = bind(admin_address, "CUHLUMN_ADMIN_ADDR").await?;
-    tracing::info!(
-        %address,
-        %admin_address,
-        data = %data.display(),
-        version = env!("CARGO_PKG_VERSION"),
-        "cuhlumn-server is listening, the blogs on the public address and the console on the admin address"
-    );
-    serve_both(state, listener, admin_listener).await?;
-    tracing::info!("cuhlumn-server stopped");
-    Ok(())
-}
-
-/// Serves the public and the admin listener until one shutdown signal stops both.
-async fn serve_both(
-    state: AppState,
-    public: TcpListener,
-    admin: TcpListener,
-) -> anyhow::Result<()> {
+        ),
+    }
     let stop = CancellationToken::new();
     let signal = stop.clone();
     tokio::spawn(async move {
         shutdown().await;
         signal.cancel();
     });
-    let blogs = axum::serve(public, public_router(state.clone()))
+    // The analytics task stops after the listeners, so it also writes the views of the last requests.
+    let flushed = CancellationToken::new();
+    let analytics = tokio::spawn(Analytics::run(state.clone(), flushed.clone()));
+    let served = match admin_listener {
+        Some(admin_listener) => serve_both(state, listener, admin_listener, stop).await,
+        None => axum::serve(listener, with_peer(router(state)))
+            .with_graceful_shutdown(stop.cancelled_owned())
+            .await
+            .context("the server stopped with an error"),
+    };
+    flushed.cancel();
+    if let Err(err) = analytics.await {
+        tracing::error!(error = %err, "the analytics task failed");
+    }
+    served?;
+    tracing::info!("cuhlumn-server stopped");
+    Ok(())
+}
+
+/// Serves the public and the admin listener until `stop` stops both.
+async fn serve_both(
+    state: AppState,
+    public: TcpListener,
+    admin: TcpListener,
+    stop: CancellationToken,
+) -> anyhow::Result<()> {
+    let blogs = axum::serve(public, with_peer(public_router(state.clone())))
         .with_graceful_shutdown(stop.clone().cancelled_owned())
         .into_future();
-    let console = axum::serve(admin, admin_router(state))
+    let console = axum::serve(admin, with_peer(admin_router(state)))
         .with_graceful_shutdown(stop.cancelled_owned())
         .into_future();
     tokio::try_join!(blogs, console).context("the server stopped with an error")?;
     Ok(())
+}
+
+/// Adds the socket peer address to each request, so analytics can use it when no proxy header names the client.
+fn with_peer(router: Router) -> IntoMakeServiceWithConnectInfo<Router, SocketAddr> {
+    router.into_make_service_with_connect_info::<SocketAddr>()
 }
 
 /// Binds `address`. An error names the address and the `variable` that sets it.

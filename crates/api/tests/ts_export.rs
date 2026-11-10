@@ -5,6 +5,7 @@
 use std::path::PathBuf;
 
 use cuhlumn_api::{
+    analytics::{AnalyticsQuery, SiteAnalytics},
     fonts::{FontItem, GoogleFontInput},
     post::{Post, PostInput},
     settings::{ServerSettings, ServerSettingsInput, TokenInput},
@@ -40,6 +41,8 @@ fn export_typescript_bindings() {
     FontItem::export_all(&config).unwrap();
     GoogleFontInput::export_all(&config).unwrap();
     AnnouncementStatus::export_all(&config).unwrap();
+    SiteAnalytics::export_all(&config).unwrap();
+    AnalyticsQuery::export_all(&config).unwrap();
     assert!(dir.join("Site.ts").is_file());
     assert!(dir.join("ErrorCode.ts").is_file());
 }

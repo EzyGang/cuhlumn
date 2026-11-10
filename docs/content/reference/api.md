@@ -55,6 +55,7 @@ See [Security](../operations/security.md) for the token and session rules.
 | `GET` | `/api/sites/{host}/media` | Admin | None | `200` array of `MediaItem` |
 | `DELETE` | `/api/sites/{host}/media/{name}` | Admin | None | `204` |
 | `POST` | `/api/sites/{host}/preview` | Admin | [`PreviewInput`](preview.md) | `200` `Preview` |
+| `GET` | `/api/sites/{host}/analytics` | Admin | None | `200` [`SiteAnalytics`](analytics.md#siteanalytics) |
 
 An unknown `/api` path returns `404`.
 A known path with a wrong method returns `405`.
@@ -62,6 +63,8 @@ Both answers use the [error format](errors.md).
 
 Outside `/api`, every blog host, console host, and the admin listener serve `GET /_fonts/{name}` without authentication.
 See [Public font route](fonts.md#public-font-route).
+Every blog host also accepts `POST /_hit` without authentication.
+See [Public beacon route](analytics.md#public-beacon-route).
 
 ## Status codes
 

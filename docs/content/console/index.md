@@ -54,9 +54,10 @@ A change of the admin token ends all sessions.
 | `/sites/{host}/new-post` | Editor | Write a new post or page |
 | `/sites/{host}/posts/{slug}` | Editor | Edit, publish, unpublish, or delete an entry |
 | `/sites/{host}/media` | Media library | Upload, copy the address, delete |
+| `/sites/{host}/analytics` | Analytics | Read the views, visitors, top pages, referrers, devices, and browsers of a period |
 
 The top bar has a site switcher and the server links **Fonts** and **Server**.
-Each site has the tabs **Posts**, **Media**, and **Settings**.
+Each site has the tabs **Posts**, **Media**, **Analytics**, and **Settings**.
 
 ## Server settings
 
