@@ -7,6 +7,7 @@
 #[macro_use]
 mod macros;
 
+pub mod analytics;
 pub mod fonts;
 pub mod post;
 pub mod settings;

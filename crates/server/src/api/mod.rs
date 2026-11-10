@@ -1,5 +1,6 @@
 //! The admin HTTP API under `/api`.
 
+pub mod analytics;
 pub mod auth;
 pub mod error;
 pub mod fonts;
@@ -64,6 +65,7 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/sites/{host}/media/{name}", delete(media::delete))
         .route("/sites/{host}/preview", post(preview::render))
+        .route("/sites/{host}/analytics", get(analytics::get))
         .fallback(not_found)
         .method_not_allowed_fallback(method_not_allowed)
 }

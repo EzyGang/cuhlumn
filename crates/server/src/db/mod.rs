@@ -1,5 +1,6 @@
-//! Sites, posts, media records, and sessions in one SQLite file.
+//! Sites, posts, media records, sessions, and analytics in one SQLite file.
 
+pub mod analytics;
 pub mod fonts;
 pub mod media;
 mod migrations;

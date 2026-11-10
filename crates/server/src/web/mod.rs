@@ -2,6 +2,7 @@
 
 pub mod cache;
 mod fonts;
+mod hit;
 mod media;
 mod pages;
 pub mod request;
@@ -39,11 +40,14 @@ use crate::{
     },
 };
 
-/// Answers a GET or HEAD request to a blog host or to an unknown host.
+/// Answers a GET or HEAD request to a blog host or to an unknown host, and the analytics beacon `POST /_hit`.
 ///
 /// Successful pages come from the page cache, or are built once and stored there.
 /// An image or font request loads only the site, not its posts.
 pub async fn public(state: AppState, request: Request) -> Response {
+    if request.method() == Method::POST && request.uri().path() == hit::HIT_PATH {
+        return hit::receive(&state, request).await;
+    }
     let (parts, _body) = request.into_parts();
     if !matches!(parts.method, Method::GET | Method::HEAD) {
         let mut response = plain(

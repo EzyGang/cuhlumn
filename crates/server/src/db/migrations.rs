@@ -119,4 +119,52 @@ ALTER TABLE posts ADD COLUMN show_cta INTEGER;
     r"
 ALTER TABLE sites ADD COLUMN font_family TEXT;
 ",
+    r"
+CREATE TABLE analytics_days (
+  host TEXT NOT NULL REFERENCES sites (host) ON DELETE CASCADE,
+  day INTEGER NOT NULL, -- days since 1970-01-01 (UTC)
+  views INTEGER NOT NULL DEFAULT 0,
+  visitors INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (host, day)
+) STRICT, WITHOUT ROWID;
+
+CREATE TABLE analytics_pages (
+  host TEXT NOT NULL REFERENCES sites (host) ON DELETE CASCADE,
+  day INTEGER NOT NULL,
+  path TEXT NOT NULL,
+  views INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (host, day, path)
+) STRICT, WITHOUT ROWID;
+
+CREATE TABLE analytics_referrers (
+  host TEXT NOT NULL REFERENCES sites (host) ON DELETE CASCADE,
+  day INTEGER NOT NULL,
+  referrer TEXT NOT NULL, -- '' means direct
+  views INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (host, day, referrer)
+) STRICT, WITHOUT ROWID;
+
+CREATE TABLE analytics_clients (
+  host TEXT NOT NULL REFERENCES sites (host) ON DELETE CASCADE,
+  day INTEGER NOT NULL,
+  device TEXT NOT NULL,
+  browser TEXT NOT NULL,
+  views INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (host, day, device, browser)
+) STRICT, WITHOUT ROWID;
+
+-- The hashes of the current UTC day only.
+CREATE TABLE analytics_visitors (
+  host TEXT NOT NULL REFERENCES sites (host) ON DELETE CASCADE,
+  day INTEGER NOT NULL,
+  hash BLOB NOT NULL,
+  PRIMARY KEY (host, day, hash)
+) STRICT, WITHOUT ROWID;
+
+CREATE TABLE analytics_salt (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  day INTEGER NOT NULL,
+  salt BLOB NOT NULL
+) STRICT;
+",
 ];

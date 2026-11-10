@@ -1,0 +1,1 @@
+(()=>{if(navigator.webdriver)return;let s=()=>navigator.sendBeacon("/_hit",JSON.stringify({path:location.pathname,referrer:document.referrer}));document.prerendering?addEventListener("prerenderingchange",s,{once:true}):s()})()

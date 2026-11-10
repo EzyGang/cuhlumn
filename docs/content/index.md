@@ -31,6 +31,7 @@ The server is a single Rust binary that keeps its data in one SQLite file and on
 | Appearance | Accent color, serif or sans-serif text, logo, favicon, share image, header links, head HTML, footer, credit line |
 | Themes | Light and dark themes with a reader toggle |
 | Media | PNG, JPEG, WebP, GIF, and AVIF uploads of up to 16 MiB |
+| Analytics | Page views, daily visitors, top pages, referrers, devices, and browsers, without cookies |
 | Management | HTTP API with a bearer token, `cuhlumn` command-line client with an agent skill, web console with a session cookie |
 | Deployment | One binary, one SQLite file, Docker image |
 | Lighthouse | 100 for performance, accessibility, best practices, and SEO on home pages, posts, and pages, on mobile and desktop |

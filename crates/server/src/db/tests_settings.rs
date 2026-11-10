@@ -153,7 +153,7 @@ fn migration_four_keeps_the_system_font() {
     let version: i64 = db
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 4);
+    assert_eq!(version, 5);
     let site = sites::get(&db, &harbor()).unwrap().unwrap();
     assert_eq!(site.brand.font, Font::Sans);
     assert_eq!(site.brand.font_family, None);

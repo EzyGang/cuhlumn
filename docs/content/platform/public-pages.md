@@ -2,7 +2,7 @@
 
 The server renders every public page as HTML on the server.
 A reader needs no JavaScript to read a post.
-The only scripts are two small inline scripts for the theme toggle.
+The only scripts are two small inline scripts for the theme toggle and one small inline script for [analytics](analytics.md).
 
 ## Addresses
 
@@ -25,6 +25,7 @@ The only scripts are two small inline scripts for the theme toggle.
 
 Public paths accept `GET` and `HEAD` only.
 Other methods return `405`.
+The exception is `POST /_hit`, which records a page view for [analytics](analytics.md).
 
 ## Redirects
 

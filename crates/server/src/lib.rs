@@ -1,5 +1,6 @@
 //! Server that hosts many blogs, each on its own domain, with an admin HTTP API and a management console.
 
+pub mod analytics;
 pub mod api;
 pub mod config;
 pub mod console;

@@ -12,8 +12,12 @@ use cuhlumn_api::site::host::Host;
 use rusqlite::Connection;
 
 use crate::{
+    analytics::Analytics,
     config::Config,
-    db::{Database, DbError, fonts as font_records, sessions, settings as stored, sites, unix_now},
+    db::{
+        Database, DbError, analytics as analytics_records, fonts as font_records, sessions,
+        settings as stored, sites, unix_now,
+    },
     fonts::{
         FontStore,
         faces::{self, LibraryFace},
@@ -25,7 +29,7 @@ use crate::{
     web::cache::PageCache,
 };
 
-/// The shared state: settings, database, media files, fonts, page cache, and IndexNow client.
+/// The shared state: settings, database, media files, fonts, page cache, analytics, and IndexNow client.
 ///
 /// Clones share one instance.
 #[derive(Clone)]
@@ -45,6 +49,9 @@ pub enum StateError {
     /// An HTTP client cannot be built.
     #[error("cannot build an HTTP client: {0}")]
     Http(#[from] reqwest::Error),
+    /// The operating system random source failed.
+    #[error("the random source failed: {0}")]
+    Random(getrandom::Error),
 }
 
 struct Inner {
@@ -57,6 +64,7 @@ struct Inner {
     faces: RwLock<Arc<[LibraryFace]>>,
     cache: PageCache,
     indexnow: IndexNow,
+    analytics: Analytics,
 }
 
 const DATABASE_FILE: &str = "cuhlumn.db";
@@ -74,13 +82,13 @@ impl AppState {
         Self::open_with(config, indexnow).await
     }
 
-    /// Creates the data folders, opens the database, deletes expired sessions, and loads the settings.
+    /// Creates the data folders, opens the database, deletes expired sessions, and loads the settings and the analytics salt.
     ///
     /// `indexnow` sends the pings, so tests can point it at a local address.
     ///
     /// # Errors
     ///
-    /// Returns [`StateError`] when a folder, the database, or an HTTP client cannot be prepared.
+    /// Returns [`StateError`] when a folder, the database, an HTTP client, or the random source fails.
     pub async fn open_with(config: Config, indexnow: IndexNow) -> Result<Self, StateError> {
         let media_root = create_folder(&config.data.join(MEDIA_FOLDER)).await?;
         let fonts_root = create_folder(&config.data.join(FONTS_FOLDER)).await?;
@@ -88,12 +96,14 @@ impl AppState {
         let db = tokio::task::spawn_blocking(move || Database::open(&path))
             .await
             .map_err(DbError::from)??;
-        let (expired, stored) = db
+        let (expired, stored, salt) = db
             .call(|connection| {
                 let expired = sessions::delete_expired(connection, unix_now())?;
-                Ok::<_, DbError>((expired, stored::get(connection)?))
+                let salt = analytics_records::salt(connection)?;
+                Ok::<_, DbError>((expired, stored::get(connection)?, salt))
             })
             .await?;
+        let analytics = Analytics::new(salt, unix_now()).map_err(StateError::Random)?;
         tracing::debug!(expired, "deleted expired sessions");
         let settings = Settings::resolve(&config, &stored);
         og::fonts::init(fonts_root.clone());
@@ -109,6 +119,7 @@ impl AppState {
                 config,
                 db,
                 indexnow,
+                analytics,
             }),
         })
     }
@@ -243,6 +254,12 @@ impl AppState {
     #[must_use]
     pub fn indexnow(&self) -> &IndexNow {
         &self.inner.indexnow
+    }
+
+    /// Returns the page-view analytics.
+    #[must_use]
+    pub fn analytics(&self) -> &Analytics {
+        &self.inner.analytics
     }
 }
 

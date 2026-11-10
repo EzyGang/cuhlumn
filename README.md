@@ -86,6 +86,7 @@ Put Cloudflare or any TLS proxy in front of it.
 | IndexNow | Notifies Bing, Yandex, and other engines when a post is published, per blog |
 | Appearance | Five palettes, three widths, three home layouts, social icons, and code highlighting |
 | Announcement bar | Shows a scheduled message above every page of a blog |
+| Analytics | Counts views and daily visitors per blog without cookies, and shows them in the console |
 | Management console | Edits sites, posts, appearance, images, fonts, and server settings in the browser |
 | Agent skill | Installs into Claude Code, Codex, Cursor, and other agents |
 
