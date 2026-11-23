@@ -3,7 +3,7 @@
 use axum::{extract::State, http::StatusCode};
 use cuhlumn_api::{
     post::{Kind, slug::Slug},
-    site::{Site, SiteInput, host::Host, indexnow_key::IndexNowKey},
+    site::{Site, SiteInput, host::Host, indexnow_key::IndexNowKey, kind::SiteKind},
 };
 use rusqlite::Connection;
 
@@ -45,8 +45,8 @@ pub async fn get(
 /// # Errors
 ///
 /// Returns [`ApiError::Conflict`] when the domain or an alias belongs to another site,
-/// [`ApiError::FieldConflict`] when it is the console host,
-/// and [`ApiError::Validation`] when `home` does not name a page of the site
+/// [`ApiError::FieldConflict`] when it is the console host or the input changes the kind of the site,
+/// and [`ApiError::Validation`] when an external site has aliases, `home` does not name a page of the site,
 /// or a new `brand.font_family` is not a family of the font library.
 pub async fn put(
     _admin: Admin,
@@ -60,6 +60,7 @@ pub async fn put(
         .db()
         .call(move |db| {
             check_names(db, &host, &input.aliases)?;
+            check_kind(db, &host, &input)?;
             check_home(db, &host, input.home.as_ref())?;
             check_font_family(db, &host, input.brand.font_family.as_deref())?;
             sites::put(db, &host, &input, &new_key, unix_now())?;
@@ -70,7 +71,7 @@ pub async fn put(
     Ok(Json(site))
 }
 
-/// Deletes a site with its posts, media records, and image files.
+/// Deletes a site with its posts, media records, image files, and analytics.
 ///
 /// # Errors
 ///
@@ -100,6 +101,22 @@ pub async fn delete(
 /// Returns [`ApiError::NotFound`] when no site has this canonical domain.
 pub fn existing(db: &Connection, host: &Host) -> Result<Site, ApiError> {
     sites::get(db, host)?.ok_or_else(|| not_found(host))
+}
+
+/// Returns the blog at the canonical domain `host`.
+///
+/// # Errors
+///
+/// Returns [`ApiError::NotFound`] when no site has this canonical domain,
+/// and [`ApiError::Conflict`] when the site is an external site, which has no posts, pages, or images.
+pub fn blog(db: &Connection, host: &Host) -> Result<Site, ApiError> {
+    let site = existing(db, host)?;
+    match site.kind {
+        SiteKind::Blog => Ok(site),
+        SiteKind::External => Err(ApiError::Conflict(format!(
+            "{host} is an external site, so it has no posts, pages, or images"
+        ))),
+    }
 }
 
 fn not_found(host: &Host) -> ApiError {
@@ -138,6 +155,28 @@ fn check_names(db: &Connection, host: &Host, aliases: &[Host]) -> Result<(), Api
                 "{alias} already belongs to the site {owner}"
             )));
         }
+    }
+    Ok(())
+}
+
+/// Rejects a change of the kind of an existing site, and aliases for an external site.
+///
+/// An external site has no public pages, so an alias has nothing to redirect to.
+fn check_kind(db: &Connection, host: &Host, input: &SiteInput) -> Result<(), ApiError> {
+    if let Some(stored) = sites::get(db, host)?.filter(|site| site.kind != input.kind) {
+        return Err(ApiError::FieldConflict {
+            field: "kind".to_owned(),
+            message: format!(
+                "{host} has the kind {}, and the kind of a site cannot change",
+                stored.kind
+            ),
+        });
+    }
+    if input.kind == SiteKind::External && !input.aliases.is_empty() {
+        return Err(ApiError::validation(
+            "aliases",
+            "an external site cannot have aliases",
+        ));
     }
     Ok(())
 }

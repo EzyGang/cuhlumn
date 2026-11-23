@@ -1,5 +1,6 @@
 //! Shared helpers: a router on a temporary data folder and request shortcuts.
 
+pub mod beacon;
 pub mod font;
 
 use std::{

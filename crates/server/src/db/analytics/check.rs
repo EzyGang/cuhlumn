@@ -1,11 +1,11 @@
 //! The host and page check of an analytics beacon.
 
-use cuhlumn_api::site::host::Host;
+use cuhlumn_api::site::{host::Host, kind::SiteKind};
 use rusqlite::Connection;
 
 use crate::{db::DbError, render::markdown::slugify, web::route::Route};
 
-/// Returns `true` when `host` is a canonical site host and `route` is a page of it that answers 200.
+/// Returns `true` when `host` is the canonical host of a blog and `route` is a page of it that answers 200.
 ///
 /// The pages are the home page, a published post or page other than the home page, and a tag page.
 /// A tag page needs a published post with the tag, by the rule of the tag page itself.
@@ -15,11 +15,7 @@ use crate::{db::DbError, render::markdown::slugify, web::route::Route};
 /// Returns [`DbError`] when a query fails or a stored tag list is invalid.
 pub fn counts(connection: &Connection, host: &Host, route: &Route) -> Result<bool, DbError> {
     match route {
-        Route::Home => exists(
-            connection,
-            "SELECT EXISTS (SELECT 1 FROM sites WHERE host = ?1)",
-            &[host.as_str()],
-        ),
+        Route::Home => is_site(connection, host, SiteKind::Blog),
         Route::Entry(slug) => exists(
             connection,
             "SELECT EXISTS (SELECT 1 FROM posts p JOIN sites s ON s.host = p.host
@@ -29,6 +25,19 @@ pub fn counts(connection: &Connection, host: &Host, route: &Route) -> Result<boo
         Route::Tag(tag) => has_tag(connection, host, tag),
         _ => Ok(false),
     }
+}
+
+/// Returns `true` when `host` is the canonical host of a site of `kind`.
+///
+/// # Errors
+///
+/// Returns [`DbError`] when the query fails.
+pub fn is_site(connection: &Connection, host: &Host, kind: SiteKind) -> Result<bool, DbError> {
+    exists(
+        connection,
+        "SELECT EXISTS (SELECT 1 FROM sites WHERE host = ?1 AND kind = ?2)",
+        &[host.as_str(), kind.as_str()],
+    )
 }
 
 /// Runs a `SELECT EXISTS` query.

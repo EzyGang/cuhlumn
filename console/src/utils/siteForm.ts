@@ -113,7 +113,9 @@ const formToBrand = (form: SiteForm): Brand => ({
   social: form.social.map((link) => ({ network: link.network, url: link.url.trim() })),
 });
 
+/** Returns the API input of the form. The form edits blogs only, so the kind is always `blog`. */
 export const formToSiteInput = (form: SiteForm): SiteInput => ({
+  kind: "blog",
   title: form.title,
   description: form.description,
   aliases: form.aliases,

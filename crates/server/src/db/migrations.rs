@@ -167,4 +167,16 @@ CREATE TABLE analytics_salt (
   salt BLOB NOT NULL
 ) STRICT;
 ",
+    r"
+ALTER TABLE sites ADD COLUMN kind TEXT NOT NULL DEFAULT 'blog'; -- 'blog' or 'external'
+
+CREATE TABLE analytics_clicks (
+  host TEXT NOT NULL REFERENCES sites (host) ON DELETE CASCADE,
+  day INTEGER NOT NULL,
+  kind TEXT NOT NULL, -- 'outbound' or 'download'
+  target TEXT NOT NULL, -- the host and the path of the link
+  clicks INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (host, day, kind, target)
+) STRICT, WITHOUT ROWID;
+",
 ];

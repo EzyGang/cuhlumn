@@ -81,7 +81,9 @@ impl IndexNow {
 mod tests {
     use cuhlumn_api::{
         settings::Scheme,
-        site::{Site, brand::Brand, host::Host, indexnow_key::IndexNowKey, lang::Lang},
+        site::{
+            Site, brand::Brand, host::Host, indexnow_key::IndexNowKey, kind::SiteKind, lang::Lang,
+        },
     };
     use tokio::{io::AsyncReadExt, net::TcpListener};
 
@@ -90,6 +92,7 @@ mod tests {
     fn site(indexnow: bool) -> Site {
         Site {
             host: Host::new("harbor.example.com").unwrap(),
+            kind: SiteKind::Blog,
             title: "Harbor Notes".to_owned(),
             description: String::new(),
             aliases: Vec::new(),

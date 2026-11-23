@@ -1,4 +1,4 @@
-//! Page-view analytics: daily counts of each site, the visitor hashes of today, and the visitor salt.
+//! Page-view and link-click analytics: daily counts of each site, the visitor hashes of today, and the visitor salt.
 
 pub mod check;
 pub mod report;

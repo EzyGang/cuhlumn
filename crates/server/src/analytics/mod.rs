@@ -1,8 +1,9 @@
-//! Page-view analytics: counts in memory, written to the database once a minute.
+//! Page-view and link-click analytics: counts in memory, written to the database once a minute.
 
 pub mod agent;
 pub mod pending;
 pub mod referrer;
+pub mod unverified;
 pub mod visitor;
 
 use std::{
@@ -12,7 +13,10 @@ use std::{
     time::Duration,
 };
 
-use cuhlumn_api::site::host::Host;
+use cuhlumn_api::{
+    analytics::ClickKind,
+    site::{host::Host, kind::SiteKind},
+};
 use tokio::time::MissedTickBehavior;
 use tokio_util::sync::CancellationToken;
 
@@ -26,7 +30,12 @@ use crate::{
     state::AppState,
 };
 
-/// The page views that wait for the database, and the visitor salt of the current day.
+/// The page script, which sends one `POST /_hit` for each page view and each counted link click.
+///
+/// Blog pages contain it inline, and external sites load it from `/_hit.js`.
+pub const SCRIPT: &str = include_str!("../../assets/hit.js");
+
+/// The page views and link clicks that wait for the database, and the visitor salt of the current day.
 pub struct Analytics {
     pending: Mutex<Pending>,
     salt: Mutex<Salt>,
@@ -37,6 +46,8 @@ pub struct Analytics {
 pub struct View {
     /// The canonical site host.
     pub host: Host,
+    /// The kind of the site.
+    pub site: SiteKind,
     /// The decoded page path, such as `/sqlite-backups/`.
     pub path: String,
     /// The referring host, or `None` for a direct visit.
@@ -45,6 +56,16 @@ pub struct View {
     /// The client address, or `None` when the request has none.
     pub ip: Option<IpAddr>,
     pub user_agent: String,
+}
+
+/// A link click that passed the host check.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Click {
+    /// The canonical site host.
+    pub host: Host,
+    pub kind: ClickKind,
+    /// The host and the path of the link, such as `github.com/EzyGang/cuhlumn`.
+    pub target: String,
 }
 
 /// The time between two database writes.
@@ -74,6 +95,7 @@ impl Analytics {
             return;
         };
         let counted = Counted {
+            site: view.site,
             path: view.path,
             referrer: view.referrer,
             device: view.client.device,
@@ -84,6 +106,16 @@ impl Analytics {
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
             .add(&view.host, day, counted);
+    }
+
+    /// Adds a checked link click at the unix time `now`.
+    ///
+    /// A click is not a page view, so it changes no view or visitor count.
+    pub fn record_click(&self, click: Click, now: i64) {
+        self.pending
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .add_click(&click.host, day_of(now), click.kind, click.target);
     }
 
     /// Writes the waiting page views, deletes the visitor hashes of past days, and stores the salt of today.

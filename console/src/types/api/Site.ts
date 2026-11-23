@@ -5,6 +5,7 @@ import type { Brand } from "./Brand";
 import type { Host } from "./Host";
 import type { IndexNowKey } from "./IndexNowKey";
 import type { Lang } from "./Lang";
+import type { SiteKind } from "./SiteKind";
 import type { Slug } from "./Slug";
 
 /**
@@ -14,7 +15,11 @@ export type Site = {
 /**
  * The canonical domain of the site.
  */
-host: Host, title: string, description: string, 
+host: Host, 
+/**
+ * A blog that the server serves, or an external website that the server only counts.
+ */
+kind: SiteKind, title: string, description: string, 
 /**
  * Other domains that redirect to the canonical domain.
  */
