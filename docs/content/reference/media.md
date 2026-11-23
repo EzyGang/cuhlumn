@@ -1,3 +1,7 @@
+---
+description: HTTP API routes that upload, list and delete the images of a site, with the accepted image types and the size limit.
+---
+
 # Media
 
 ## Routes

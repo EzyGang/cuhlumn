@@ -1,3 +1,7 @@
+---
+title: HTTP API overview
+---
+
 # HTTP API overview
 
 The HTTP API manages sites, posts, media, fonts, server settings, and console sessions.

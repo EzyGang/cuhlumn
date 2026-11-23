@@ -1,3 +1,7 @@
+---
+description: HTTP API routes that list, read, create, replace and delete the posts and pages of a site, with the PostInput and Post fields.
+---
+
 # Posts
 
 ## Routes
