@@ -119,6 +119,13 @@ The visitor hash uses the domain of the external site.
 - A page with the `Referrer-Policy` value `no-referrer` or `same-origin` makes the browser send `Origin: null`. Its views do not count.
 - A program that is not a browser can send any `Origin` header. Such a sender can inflate the counts, as for a blog.
 
+### This documentation site
+
+This documentation site is an external site of the Cuhlumn server that the maintainers operate.
+Each page loads the script from `blog.ezygang.digital`, and the counts stay on that server.
+The server counts the page views, the daily visitors, the referring domains, the devices, the browsers, and the link clicks of this site.
+The script sets no cookies and stores nothing in the browser, and the server never stores IP addresses.
+
 ## Link clicks
 
 The script counts a click on a link with an `http` or `https` address in these cases:
