@@ -1,6 +1,6 @@
 ---
 name: cuhlumn
-description: Use to create, change, publish, or delete blogs, posts, pages, and images on a Cuhlumn server with the cuhlumn CLI.
+description: Use to create, change, publish, or delete blogs, posts, pages, and images on a Cuhlumn server with the cuhlumn CLI, to read site analytics, and to register external sites for analytics.
 ---
 
 # cuhlumn
@@ -135,7 +135,7 @@ The first publication time stays when you edit, unpublish, or publish again.
 | `cuhlumn site get --input > site.json` | The settings as a file for `site apply` |
 | `cuhlumn site apply site.json` | Creates the site, or replaces all its settings; `-` reads stdin |
 | `cuhlumn site set field=value ...` | Changes some settings and keeps the others |
-| `cuhlumn site delete --yes` | Deletes the site with all its posts and images |
+| `cuhlumn site delete --yes` | Deletes the site with all its posts, images, and analytics |
 
 Create a site with a JSON or YAML file:
 
@@ -161,6 +161,7 @@ Use `site set` for changes to an existing site.
 | Field | Meaning |
 | --- | --- |
 | `title` | Blog name, required, at most 200 characters |
+| `kind` | `blog` (default) or `external`. It cannot change after the site exists. See [Analytics and external sites](#analytics-and-external-sites) |
 | `description` | Home page text and meta description |
 | `aliases` | Other domains that redirect to the site |
 | `author`, `author_url` | Author name and absolute address |
@@ -276,6 +277,47 @@ cuhlumn font delete <name> --yes
 - A blog uses a library family through `brand.font_family`.
 - Share images use library fonts for characters that Inter does not have.
 - The server serves the fonts publicly. Use only fonts whose license allows web use, such as Google Fonts.
+
+## Analytics and external sites
+
+`cuhlumn analytics` prints the report of the site as JSON.
+`--period` is `week`, `month` (default), `quarter`, or `year`, and the period ends today (UTC).
+
+| Field | Meaning |
+| --- | --- |
+| `views`, `visitors` | The totals of the period. `visitors` is the sum of the daily unique visitors |
+| `days` | One `{date, views, visitors}` entry for each day, oldest first |
+| `pages` | The 10 pages with the most views, as `{path, title, views}` |
+| `referrers` | The 10 referring domains, as `{host, views}`. `host` is `null` for direct visits |
+| `devices`, `browsers` | The views of each device class and each browser family |
+| `outbound` | The 10 outbound link targets with the most clicks, as `{target, clicks}` |
+| `downloads` | The 10 download targets with the most clicks, as `{target, clicks}` |
+
+A `target` is the host name and the path of a link, such as `github.com/EzyGang/cuhlumn`.
+A click is not a view, so clicks change no view count and no visitor count.
+
+An external site is a website that the Cuhlumn server does not serve, such as a static documentation site.
+The server only counts its page views and link clicks.
+
+1. Register the site with its exact host name:
+
+   ```sh
+   echo '{"title": "Harbor Docs", "kind": "external"}' | cuhlumn --site docs.example.org site apply -
+   ```
+
+2. Add this tag to every page of that website, with the main domain of a blog on the Cuhlumn server:
+
+   ```html
+   <script async src="https://blog.example.com/_hit.js"></script>
+   ```
+
+3. Read the report with `cuhlumn --site docs.example.org analytics`.
+
+- An external site uses only `title`. It cannot have aliases, a home page, posts, pages, or images.
+- `post` and `media` commands fail for an external site with `error: conflict: ...`.
+- `cuhlumn --site docs.example.org site delete --yes` removes the site and its counts.
+- The server stores at most 1,000 different page paths for each external site and day.
+- The server stores at most 1,000 different link targets for each site and day.
 
 ## Home page
 

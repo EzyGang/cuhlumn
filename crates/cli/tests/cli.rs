@@ -355,6 +355,83 @@ fn files_resolve_relative_to_the_working_folder() {
 }
 
 #[test]
+fn external_site_registers_reports_and_deletes() {
+    let server = Server::start();
+    server.create_site();
+    let docs = [
+        ("CUHLUMN_TOKEN", TOKEN),
+        ("CUHLUMN_SITE", "docs.example.org"),
+    ];
+    let json = |args: &[&str], stdin: Option<&str>| -> Value {
+        let run = server.run_with(args, &docs, stdin);
+        assert_eq!(run.code, 0, "{args:?} failed: {}", run.stderr);
+        serde_json::from_str(&run.stdout).unwrap()
+    };
+    let input = r#"{"title": "Harbor Docs", "kind": "external"}"#;
+    let site = json(&["site", "apply", "-"], Some(input));
+    assert_eq!(site["kind"], json!("external"));
+    assert_eq!(
+        json(&["site", "set", "title=Docs"], None)["kind"],
+        "external"
+    );
+    let kinds: Vec<Value> = server
+        .json(&["site", "list"])
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|site| site["kind"].clone())
+        .collect();
+    assert_eq!(kinds, [json!("blog"), json!("external")]);
+
+    let to_blog = server.run_with(&["site", "set", "kind=blog"], &docs, None);
+    assert_eq!(to_blog.code, 1);
+    assert!(to_blog.stderr.contains("conflict"), "{}", to_blog.stderr);
+    let posts = server.run_with(&["post", "list"], &docs, None);
+    assert_eq!(posts.code, 1);
+    assert!(posts.stderr.contains("external site"), "{}", posts.stderr);
+
+    let http = reqwest::blocking::Client::new();
+    for body in [
+        json!({"host": "docs.example.org", "path": "/guide/", "referrer": ""}),
+        json!({"host": "docs.example.org", "click": "download", "target": "docs.example.org/harbor.zip"}),
+    ] {
+        let sent = http
+            .post(format!("{}/_hit", server.url))
+            .header("host", SITE)
+            .header("origin", "https://docs.example.org")
+            .header(
+                "user-agent",
+                "Mozilla/5.0 (X11; Linux x86_64; rv:132.0) Firefox/132.0",
+            )
+            .body(body.to_string())
+            .send()
+            .unwrap();
+        assert_eq!(sent.status(), 204);
+    }
+    let report = json(&["analytics", "--period", "week"], None);
+    assert_eq!(report["period"], "week");
+    assert_eq!(report["views"], 1);
+    assert_eq!(
+        report["pages"],
+        json!([{"path": "/guide/", "title": null, "views": 1}])
+    );
+    assert_eq!(
+        report["downloads"],
+        json!([{"target": "docs.example.org/harbor.zip", "clicks": 1}])
+    );
+    assert_eq!(report["outbound"], json!([]));
+    assert_eq!(json(&["analytics"], None)["period"], "month");
+    assert_eq!(server.json(&["analytics"])["views"], 0);
+    let decade = server.run_with(&["analytics", "--period", "decade"], &docs, None);
+    assert_ne!(decade.code, 0);
+    assert!(decade.stderr.contains("period"), "{}", decade.stderr);
+
+    let deleted = server.run_with(&["site", "delete", "--yes"], &docs, None);
+    assert_eq!(deleted.code, 0, "{}", deleted.stderr);
+    assert_eq!(server.json(&["site", "list"]).as_array().unwrap().len(), 1);
+}
+
+#[test]
 fn announce_set_show_and_clear() {
     let server = Server::start();
     server.create_site();

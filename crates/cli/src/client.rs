@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use cuhlumn_api::{
+    analytics::{Period, SiteAnalytics},
     fonts::{FontItem, GoogleFontInput},
     post::{Post, PostInput, slug::Slug},
     site::{Site, SiteInput, host::Host, link::AbsoluteUrl},
@@ -137,6 +138,11 @@ impl Client {
     pub fn preview(&self, host: &Host, input: &PreviewInput) -> Result<Preview, ClientError> {
         let path = format!("/sites/{host}/preview");
         receive(with_json(self.request(Method::POST, &path), input)?)
+    }
+
+    pub fn analytics(&self, host: &Host, period: Period) -> Result<SiteAnalytics, ClientError> {
+        let path = format!("/sites/{host}/analytics?period={period}");
+        receive(self.request(Method::GET, &path))
     }
 
     pub fn fonts(&self) -> Result<Vec<FontItem>, ClientError> {
