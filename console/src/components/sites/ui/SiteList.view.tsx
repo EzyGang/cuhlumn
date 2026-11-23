@@ -8,7 +8,7 @@ import { SiteCardView } from "./SiteCard.view";
 
 export const SiteListView = ({ data, status }: SitesModel): JSX.Element => (
   <section class="flex flex-col gap-6">
-    <PageHeader eyebrow="Sites" title="Your blogs">
+    <PageHeader eyebrow="Sites" title="Your sites">
       <LinkButton href="/new-site" variant="primary">
         <Plus size={14} aria-hidden="true" />
         New site

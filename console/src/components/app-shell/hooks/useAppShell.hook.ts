@@ -8,6 +8,7 @@ import { sitesStore } from "../../../stores/sites.store";
 import type { AppShellModel } from "../../../types/appShell";
 import type { Navigate } from "../../../types/navigation";
 import { reportApiError } from "../../../utils/reportApiError";
+import { siteHomePath, siteKind } from "../../../utils/sites";
 
 const logOut = async (loggingOut: Signal<boolean>, navigate: Navigate): Promise<void> => {
   loggingOut.value = true;
@@ -32,12 +33,16 @@ export const useAppShell = (): AppShellModel => {
   const host = params?.host ?? null;
   return {
     data: {
-      hosts: (sites ?? []).map((site) => ({ value: site.host, label: site.host })),
+      hosts: (sites ?? []).map((site) => ({
+        value: site.host,
+        label: site.kind === "external" ? `${site.host} (external)` : site.host,
+      })),
       host,
     },
     status: { loggingOut: loggingOut.value },
     actions: {
-      switchSite: (next: string): void => navigate(`/sites/${encodeURIComponent(next)}/posts`),
+      switchSite: (next: string): void =>
+        navigate(siteHomePath({ host: next, kind: siteKind(sites, next) ?? "blog" })),
       logout: (): void => void logOut(loggingOut, navigate),
     },
   };
