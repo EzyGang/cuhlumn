@@ -15,6 +15,7 @@ description: HTTP API routes that list, read, create, replace and delete the sit
 
 `PUT` creates the site or replaces all its settings.
 An omitted field takes its default value, except `indexnow_key`, which keeps the stored key.
+`DELETE` removes the site with its aliases, posts, media records, and analytics.
 
 ## `SiteInput`
 
@@ -23,6 +24,7 @@ Unknown fields return `400`.
 
 | Field | Type | Default | Rule |
 | --- | --- | --- | --- |
+| `kind` | [`SiteKind`](value-types.md#enumerations) | `"blog"` | `blog` or `external`. The kind of an existing site cannot change |
 | `title` | String | Required | Trimmed, not blank, at most 200 characters |
 | `description` | String | `""` | No control characters |
 | `aliases` | Array of [`Host`](value-types.md#host) | `[]` | Repeated values and the site's own domain are removed |
@@ -38,6 +40,15 @@ Unknown fields return `400`.
 | `indexnow` | Boolean | `true` | `false` stops the IndexNow notifications of the site |
 | `announcement` | [`Announcement`](#announcement) or `null` | `null` | |
 | `brand` | [`Brand`](#brand) | Defaults below | |
+
+### External sites
+
+A site with the kind `external` is a website that a different server serves.
+The server counts its [page views and link clicks](../platform/analytics.md#external-sites), and serves no pages for its domain.
+
+- An external site uses only `title`. The server stores the other fields, but does not use them.
+- `aliases` must be empty, and `home` must be `null`.
+- The post, media, and preview routes of an external site return `409` with the code `conflict`.
 
 ## `Brand`
 
@@ -108,6 +119,7 @@ The answer of the site routes.
 | Field | Type |
 | --- | --- |
 | `host` | `Host` |
+| `kind` | `SiteKind` |
 | `title` | String |
 | `description` | String |
 | `aliases` | Array of `Host`, sorted |
@@ -137,6 +149,9 @@ The answer of the site routes.
 | `{host}` is the console domain | `409`, field `host` |
 | An alias is the console domain | `409`, field `aliases[N]` |
 | `brand.font_family` changes to a family that no library font has | `400` `validation`, field `brand.font_family` |
+| `kind` is different from the kind of the stored site | `409`, field `kind` |
+| An external site has aliases | `400`, field `aliases` |
+| A post, media, or preview route names an external site | `409` |
 
 A `brand.font_family` value that is equal to the stored value always passes.
 A site that uses a deleted family can therefore still save its other fields.
@@ -163,4 +178,13 @@ curl -X PUT https://blog.example.com/api/sites/blog.example.com \
       "credit": false
     }
   }'
+```
+
+This request registers an external site:
+
+```sh
+curl -X PUT https://blog.example.com/api/sites/docs.example.org \
+  -H "Authorization: Bearer $CUHLUMN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Harbor Docs", "kind": "external"}'
 ```

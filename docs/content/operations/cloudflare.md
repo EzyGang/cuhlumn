@@ -84,6 +84,7 @@ The rule tells Cloudflare to follow the `Cache-Control` header of each response.
 | Media files | `public, max-age=31536000, immutable` | Cached for 1 year |
 | Redirects and 404 pages | None | Not cached |
 | `POST /_hit` analytics beacon | `no-store` | Not cached, because Cloudflare never caches `POST` |
+| `/_hit.js` analytics script for external sites | `public, max-age=86400` | Cached for 1 day |
 | API and console | Excluded by the rule | Not cached |
 
 Public pages never set cookies, so Cloudflare can store every public response.
@@ -92,6 +93,12 @@ Each response also has an `ETag`, so Cloudflare can check a stale page with a ch
 The edge cache does not hide page views from [analytics](../platform/analytics.md).
 The inline script of each page sends a `POST /_hit` request, and that request always reaches the server.
 Cloudflare sends the client address in `CF-Connecting-IP`, and the server uses it to count visitors.
+
+An [external site](../platform/analytics.md#external-sites) loads `/_hit.js` from a blog domain and sends its `POST /_hit` requests to that domain.
+The external site itself does not have to use Cloudflare.
+The cache rule makes `/_hit.js` eligible for cache, and the edge keeps it for 1 day.
+After a server upgrade, the edge can serve the old script for up to 1 day.
+Purge `/_hit.js` if the new script must load immediately.
 
 ## Changes and freshness
 

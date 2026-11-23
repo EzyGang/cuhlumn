@@ -3,6 +3,7 @@
 The server renders every public page as HTML on the server.
 A reader needs no JavaScript to read a post.
 The only scripts are two small inline scripts for the theme toggle and one small inline script for [analytics](analytics.md).
+The analytics script counts page views and link clicks, and it does not change the page.
 
 ## Addresses
 
@@ -22,10 +23,11 @@ The only scripts are two small inline scripts for the theme toggle and one small
 | `/og/{slug}.png` | Share image of an entry | `image/png` | 86400 |
 | `/media/{name}` | Uploaded image | Image type | 31536000, immutable |
 | `/{indexnow_key}.txt` | IndexNow key file | `text/plain` | 300 |
+| `/_hit.js` | Analytics script for [external sites](analytics.md#external-sites) | `text/javascript` | 86400 |
 
 Public paths accept `GET` and `HEAD` only.
 Other methods return `405`.
-The exception is `POST /_hit`, which records a page view for [analytics](analytics.md).
+The exception is `POST /_hit`, which records a page view or a link click for [analytics](analytics.md).
 
 ## Redirects
 

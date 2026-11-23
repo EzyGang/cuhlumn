@@ -45,7 +45,7 @@ A change of the admin token ends all sessions.
 | Address | Screen | Actions |
 | --- | --- | --- |
 | `/setup` | Setup | Set the first admin token |
-| `/` | Your blogs | List all sites, open a site, create a site |
+| `/` | Your sites | List all sites, open a site, create a site |
 | `/settings` | Server settings | Change the console domain, the scheme, and the admin token |
 | `/fonts` | Font library | Upload fonts, import from Google Fonts, delete fonts |
 | `/new-site` | Site settings | Create a site |
@@ -54,10 +54,15 @@ A change of the admin token ends all sessions.
 | `/sites/{host}/new-post` | Editor | Write a new post or page |
 | `/sites/{host}/posts/{slug}` | Editor | Edit, publish, unpublish, or delete an entry |
 | `/sites/{host}/media` | Media library | Upload, copy the address, delete |
-| `/sites/{host}/analytics` | Analytics | Read the views, visitors, top pages, referrers, devices, and browsers of a period |
+| `/sites/{host}/analytics` | Analytics | Read the views, visitors, top pages, referrers, devices, browsers, and link clicks of a period |
 
 The top bar has a site switcher and the server links **Fonts** and **Server**.
-Each site has the tabs **Posts**, **Media**, **Analytics**, and **Settings**.
+Each blog has the tabs **Posts**, **Media**, **Analytics**, and **Settings**.
+
+An [external site](../platform/analytics.md#external-sites) has an **External** badge in the site list and only the **Analytics** tab.
+The other addresses of an external site open its analytics.
+The console cannot create or delete an external site.
+Use the API or the command-line client for these operations.
 
 ## Server settings
 

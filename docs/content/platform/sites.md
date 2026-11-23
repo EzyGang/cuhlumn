@@ -1,7 +1,7 @@
 # Sites and domains
 
 One Cuhlumn server hosts many sites.
-Each site is one blog with one canonical domain.
+Each site is one blog with one canonical domain, or one [external site](#external-sites) that the server only counts.
 
 ## Canonical domain
 
@@ -62,8 +62,18 @@ The admin sets it on the **Server settings** page of the console, or with `CUHLU
 
 See [Sites reference](../reference/sites.md) for types, defaults, and limits.
 
+## External sites
+
+An external site is a website that a different server serves, for example a static documentation site.
+It has the `kind` value `external`, and its domain is the host name of that website.
+
+- The server counts its page views and link clicks. See [Analytics](analytics.md#external-sites).
+- The server serves no pages, feeds, sitemaps, or redirects for its domain.
+- It uses only the `title` setting, and it cannot have aliases, posts, pages, or images.
+- The kind of a site cannot change after you create the site.
+
 ## Delete a site
 
-`DELETE /api/sites/{host}` removes the site with its aliases, posts, pages, and media records.
+`DELETE /api/sites/{host}` removes the site with its aliases, posts, pages, media records, and analytics.
 The server also removes the media folder of the site.
 The operation cannot be undone.
