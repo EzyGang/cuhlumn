@@ -1,7 +1,10 @@
 //! The analytics report of a site.
 
 use axum::extract::{Query, State, rejection::QueryRejection};
-use cuhlumn_api::analytics::{AnalyticsQuery, Period, SiteAnalytics};
+use cuhlumn_api::{
+    analytics::{AnalyticsQuery, Period, SiteAnalytics},
+    site::kind::SiteKind,
+};
 
 use crate::{
     analytics::visitor::day_of,
@@ -10,9 +13,10 @@ use crate::{
     state::AppState,
 };
 
-/// Returns the views and visitors of a site for a period that ends today (UTC).
+/// Returns the views, the visitors, and the link clicks of a site for a period that ends today (UTC).
 ///
-/// The waiting page views are written first, so the report is current.
+/// The waiting page views and link clicks are written first, so the report is current.
+/// An external site has no page titles.
 ///
 /// # Errors
 ///
@@ -30,7 +34,8 @@ pub async fn get(
         .db()
         .call(move |db| {
             let site = existing(db, &host)?;
-            Ok::<_, ApiError>(report(db, &host, &site.title, query.period, day_of(now))?)
+            let home_title = (site.kind == SiteKind::Blog).then_some(site.title.as_str());
+            Ok::<_, ApiError>(report(db, &host, home_title, query.period, day_of(now))?)
         })
         .await?;
     Ok(Json(analytics))

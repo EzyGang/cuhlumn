@@ -76,6 +76,7 @@ pub fn owner(connection: &Connection, name: &Host) -> Result<Option<Host>, DbErr
 ///
 /// The alias list drops `host` itself.
 /// A new site without an input key gets `new_key`; an existing site keeps its key.
+/// An existing site keeps its kind.
 ///
 /// # Errors
 ///
@@ -97,12 +98,12 @@ pub fn put(
         .transpose()?;
     let tx = connection.transaction()?;
     tx.execute(
-        "INSERT INTO sites (host, title, description, author, author_url, project_name, project_url,
+        "INSERT INTO sites (host, kind, title, description, author, author_url, project_name, project_url,
            cta, show_cta, lang, home, indexnow_key, accent, font, font_family, logo, favicon,
            og_image, links, head, footer, credit, palette, theme, theme_toggle, width, home_layout,
            social, social_in_header, code_theme, card_style, card_meta, indexnow, announcement,
            updated_at)
-         VALUES (:host, :title, :description, :author, :author_url, :project_name, :project_url,
+         VALUES (:host, :kind, :title, :description, :author, :author_url, :project_name, :project_url,
            :cta, :show_cta, :lang, :home, COALESCE(:key, :new_key), :accent, :font, :font_family,
            :logo, :favicon, :og_image, :links, :head, :footer, :credit, :palette, :theme,
            :theme_toggle, :width, :home_layout, :social, :social_in_header, :code_theme,
@@ -126,6 +127,7 @@ pub fn put(
            updated_at = excluded.updated_at",
         named_params! {
             ":host": host.as_str(),
+            ":kind": input.kind.as_str(),
             ":title": input.title,
             ":description": input.description,
             ":author": input.author,
@@ -185,7 +187,7 @@ pub fn delete(connection: &Connection, host: &Host) -> Result<bool, DbError> {
     Ok(connection.execute("DELETE FROM sites WHERE host = ?1", [host.as_str()])? > 0)
 }
 
-const SELECT: &str = "SELECT host, title, description, author, author_url, project_name,
+const SELECT: &str = "SELECT host, kind, title, description, author, author_url, project_name,
   project_url, cta, show_cta, lang, home, indexnow_key, accent, font, font_family, logo, favicon,
   og_image, links, head, footer, credit, palette, theme, theme_toggle, width, home_layout, social,
   social_in_header, code_theme, card_style, card_meta, indexnow, announcement, updated_at
@@ -194,6 +196,7 @@ const SELECT: &str = "SELECT host, title, description, author, author_url, proje
 fn site_row(row: &Row<'_>) -> rusqlite::Result<Site> {
     Ok(Site {
         host: parse(row, "host")?,
+        kind: parse(row, "kind")?,
         title: row.get("title")?,
         description: row.get("description")?,
         aliases: Vec::new(),

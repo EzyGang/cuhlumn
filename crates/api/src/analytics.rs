@@ -41,6 +41,17 @@ text_enum! {
     }
 }
 
+text_enum! {
+    /// The kind of a counted link click.
+    pub enum ClickKind / ClickKindError ("click kind") {
+        /// A click on a link to another host.
+        #[default]
+        Outbound = "outbound",
+        /// A click on a link to a file download.
+        Download = "download",
+    }
+}
+
 impl Period {
     /// Returns the number of days in the report, today included.
     #[must_use]
@@ -85,6 +96,10 @@ pub struct SiteAnalytics {
     pub referrers: Vec<ReferrerCount>,
     pub devices: Vec<DeviceCount>,
     pub browsers: Vec<BrowserCount>,
+    /// The outbound link targets with the most clicks, at most 10.
+    pub outbound: Vec<ClickCount>,
+    /// The download targets with the most clicks, at most 10.
+    pub downloads: Vec<ClickCount>,
 }
 
 /// The views and visitors of one day.
@@ -137,4 +152,14 @@ pub struct BrowserCount {
     pub browser: Browser,
     #[cfg_attr(feature = "ts", ts(type = "number"))]
     pub views: u64,
+}
+
+/// The clicks on one link target.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+pub struct ClickCount {
+    /// The host and the path of the link, for example `github.com/EzyGang/cuhlumn`.
+    pub target: String,
+    #[cfg_attr(feature = "ts", ts(type = "number"))]
+    pub clicks: u64,
 }

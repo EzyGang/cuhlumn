@@ -7,6 +7,7 @@ use cuhlumn_api::{
         brand::Brand,
         host::Host,
         indexnow_key::IndexNowKey,
+        kind::SiteKind,
         theme::{Font, Palette},
     },
 };
@@ -153,8 +154,9 @@ fn migration_four_keeps_the_system_font() {
     let version: i64 = db
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 5);
+    assert_eq!(version, 6);
     let site = sites::get(&db, &harbor()).unwrap().unwrap();
+    assert_eq!(site.kind, SiteKind::Blog);
     assert_eq!(site.brand.font, Font::Sans);
     assert_eq!(site.brand.font_family, None);
     let mut input = SiteInput::from(site);

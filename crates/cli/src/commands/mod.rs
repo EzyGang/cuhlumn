@@ -42,6 +42,10 @@ pub fn run(cli: Cli) -> anyhow::Result<()> {
         Command::Post(command) => post::run(&Context::admin(connection)?, command),
         Command::Media(command) => media::run(&Context::admin(connection)?, command),
         Command::Announce(command) => announce::run(&Context::admin(connection)?, command),
+        Command::Analytics { period } => {
+            let context = Context::admin(connection)?;
+            print_json(&context.client.analytics(context.site()?, period)?)
+        }
         Command::Font(command) => font::run(&Context::admin(connection)?, command),
     }
 }

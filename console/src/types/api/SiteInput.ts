@@ -5,6 +5,7 @@ import type { Brand } from "./Brand";
 import type { Host } from "./Host";
 import type { IndexNowKey } from "./IndexNowKey";
 import type { Lang } from "./Lang";
+import type { SiteKind } from "./SiteKind";
 import type { Slug } from "./Slug";
 
 /**
@@ -13,6 +14,11 @@ import type { Slug } from "./Slug";
  * Omitted fields take their default values.
  */
 export type SiteInput = { 
+/**
+ * The kind of an existing site cannot change.
+ * An external site uses only `title`, and it has no aliases and no home page.
+ */
+kind: SiteKind, 
 /**
  * Trimmed, not blank, at most 200 characters.
  */

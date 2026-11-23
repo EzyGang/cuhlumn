@@ -45,7 +45,7 @@ The public address then answers only `cuhlumn health`, and the other commands ge
 `cuhlumn health` needs only the server address.
 `cuhlumn site list` needs the server address and the token.
 The `font` commands need the server address and the token, but not the site.
-Every other site, post, media, and announce command also needs the site.
+Every other site, post, media, announce, and analytics command also needs the site.
 
 A new server without a token is in setup mode.
 The admin sets the token on the **Setup** page of the console, or sets `CUHLUMN_TOKEN` on the server.
@@ -59,9 +59,9 @@ The client uses the token that the admin set.
 | `cuhlumn health` | Server status and version |
 | `cuhlumn site list` | All sites |
 | `cuhlumn site get [--input]` | The site, or its settings as an input file |
-| `cuhlumn site apply <file>` | Creates the site, or replaces all its settings, from JSON or YAML |
+| `cuhlumn site apply <file>` | Creates the site, or replaces all its settings, from JSON or YAML. `kind: external` registers an external site |
 | `cuhlumn site set <field=value>...` | Changes some settings and keeps the others |
-| `cuhlumn site delete --yes` | Deletes the site with its posts and images |
+| `cuhlumn site delete --yes` | Deletes the site with its posts, images, and analytics |
 | `cuhlumn post list [--status S] [--kind K]` | Posts and pages without their bodies |
 | `cuhlumn post get <slug> [--markdown]` | One entry as JSON, or as a Markdown file |
 | `cuhlumn post push <file> [--publish \| --draft]` | Creates or replaces an entry from a Markdown file |
@@ -76,6 +76,7 @@ The client uses the token that the admin set.
 | `cuhlumn announce show` | The announcement bar and its status |
 | `cuhlumn announce set <text> [options]` | Replaces the announcement bar |
 | `cuhlumn announce clear` | Removes the announcement bar |
+| `cuhlumn analytics [--period P]` | The views, visitors, and link clicks of the site |
 | `cuhlumn font list` | Fonts of the server library |
 | `cuhlumn font import <url>` | Imports fonts from a Google Fonts address |
 | `cuhlumn font upload <file>` | Uploads a TTF, OTF, or TTC font |
@@ -84,6 +85,27 @@ The client uses the token that the admin set.
 | `cuhlumn install-skill` | Installs the agent skill into AI agents with the `skills` installer |
 
 `cuhlumn --help` and `cuhlumn <command> --help` show every option.
+
+## Analytics and external sites
+
+`cuhlumn analytics` prints the [analytics report](../reference/analytics.md#siteanalytics) of the site as JSON.
+`--period` is `week`, `month`, `quarter`, or `year`, and the default is `month`.
+
+```sh
+cuhlumn analytics --period week
+```
+
+An [external site](../platform/analytics.md#external-sites) is a website that a different server serves.
+Register it with `kind: external`, and use its host name as the site:
+
+```sh
+echo '{"title": "Harbor Docs", "kind": "external"}' | cuhlumn --site docs.example.org site apply -
+cuhlumn --site docs.example.org analytics
+cuhlumn --site docs.example.org site delete --yes
+```
+
+Then add the script tag from [Add the script](../platform/analytics.md#add-the-script) to the pages of that website.
+The `post` and `media` commands fail for an external site, and an announcement has no effect.
 
 ## Post files
 

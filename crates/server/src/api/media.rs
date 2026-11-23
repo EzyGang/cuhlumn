@@ -15,7 +15,7 @@ use crate::{
         error::ApiError,
         json::{Json, RawBody},
         path::{MediaPath, SitePath},
-        sites::existing,
+        sites::blog,
     },
     db::{media, unix_now},
     media::{format::ImageFormat, name::MediaName},
@@ -59,7 +59,7 @@ pub async fn upload(
     let target = host.clone();
     state
         .db()
-        .call(move |db| existing(db, &target).map(|_| ()))
+        .call(move |db| blog(db, &target).map(|_| ()))
         .await?;
     let name = state.media().save(&host, format, body.clone()).await?;
     let size = i64::try_from(body.len()).unwrap_or(i64::MAX);
@@ -68,7 +68,7 @@ pub async fn upload(
     let inserted = state
         .db()
         .call(move |db| {
-            existing(db, &target)?;
+            blog(db, &target)?;
             media::insert(db, &target, &record, size, unix_now()).map_err(|err| {
                 if err.is_foreign_key() {
                     ApiError::NotFound(format!("no site has the domain {target}"))
@@ -105,7 +105,7 @@ pub async fn list(
     let items = state
         .db()
         .call(move |db| {
-            existing(db, &host)?;
+            blog(db, &host)?;
             Ok::<_, ApiError>(media::list(db, scheme, &host)?)
         })
         .await?;
@@ -126,7 +126,7 @@ pub async fn delete(
     state
         .db()
         .call(move |db| {
-            existing(db, &target)?;
+            blog(db, &target)?;
             if !media::delete(db, &target, &record)? {
                 return Err(ApiError::NotFound(format!(
                     "the site {target} has no image {record}"

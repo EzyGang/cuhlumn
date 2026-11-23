@@ -7,6 +7,7 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use cuhlumn_api::{
+    analytics::Period,
     post::{Kind, Status, slug::Slug},
     site::{host::Host, link::AbsoluteUrl},
 };
@@ -48,7 +49,7 @@ pub struct Connection {
 pub enum Command {
     /// Checks that the server answers. Needs no token.
     Health,
-    /// Lists, creates, changes, and deletes sites.
+    /// Lists, creates, changes, and deletes sites: blogs, and external sites that the server only counts.
     #[command(subcommand)]
     Site(SiteCommand),
     /// Writes, publishes, and deletes posts and pages of the site.
@@ -60,6 +61,12 @@ pub enum Command {
     /// Shows, sets, and clears the announcement bar of the site.
     #[command(subcommand)]
     Announce(AnnounceCommand),
+    /// Shows the page views, the visitors, and the link clicks of the site.
+    Analytics {
+        /// The time span, which ends today (UTC): week, month, quarter, or year.
+        #[arg(long, default_value_t)]
+        period: Period,
+    },
     /// Lists, imports, uploads, and deletes fonts of the server library. Needs no site.
     ///
     /// The library belongs to the server, and every site can use its families.
@@ -120,6 +127,7 @@ pub enum SiteCommand {
     /// Creates the site, or replaces all its settings, from a JSON or YAML file.
     ///
     /// Omitted fields take their default values. Use `-` to read stdin.
+    /// `kind: external` registers a website that another server serves, so the server counts its views.
     Apply {
         /// The settings file.
         file: PathBuf,
@@ -131,7 +139,7 @@ pub enum SiteCommand {
         #[arg(required = true)]
         assignments: Vec<Assignment>,
     },
-    /// Deletes the site with its aliases, posts, pages, and images.
+    /// Deletes the site with its aliases, posts, pages, images, and analytics.
     Delete {
         /// Confirms the deletion, which cannot be undone.
         #[arg(long)]
@@ -227,6 +235,8 @@ Examples:
   cuhlumn font import 'https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400'
   cuhlumn site set brand.font_family=Lora
   cuhlumn announce set \"We moved to a new server.\" --until 2026-12-01T00:00:00Z
+  echo '{\"title\": \"Harbor Docs\", \"kind\": \"external\"}' | cuhlumn --site docs.example.org site apply -
+  cuhlumn analytics --period week
   cuhlumn skill";
 
 const SET_HELP: &str = "\

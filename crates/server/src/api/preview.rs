@@ -4,7 +4,7 @@ use axum::extract::State;
 use cuhlumn_api::wire::{Preview, PreviewInput};
 
 use crate::{
-    api::{auth::Admin, error::ApiError, json::Json, path::SitePath, sites::existing},
+    api::{auth::Admin, error::ApiError, json::Json, path::SitePath, sites::blog},
     render::{
         markdown,
         style::{css::stylesheet, font::family_faces},
@@ -25,7 +25,7 @@ pub async fn render(
     SitePath(host): SitePath,
     Json(input): Json<PreviewInput>,
 ) -> Result<Json<Preview>, ApiError> {
-    let site = state.db().call(move |db| existing(db, &host)).await?;
+    let site = state.db().call(move |db| blog(db, &host)).await?;
     let library = state.library_faces();
     let (doc, css) = tokio::task::spawn_blocking(move || {
         let faces = family_faces(&site.brand, &library);

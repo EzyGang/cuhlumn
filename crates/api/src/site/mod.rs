@@ -5,6 +5,7 @@ pub mod announcement;
 pub mod brand;
 pub mod host;
 pub mod indexnow_key;
+pub mod kind;
 pub mod lang;
 pub mod link;
 pub mod social;
@@ -18,7 +19,7 @@ use crate::{
     post::slug::Slug,
     site::{
         announcement::Announcement, brand::Brand, host::Host, indexnow_key::IndexNowKey,
-        lang::Lang, link::AbsoluteUrl,
+        kind::SiteKind, lang::Lang, link::AbsoluteUrl,
     },
     text,
 };
@@ -29,6 +30,8 @@ use crate::{
 pub struct Site {
     /// The canonical domain of the site.
     pub host: Host,
+    /// A blog that the server serves, or an external website that the server only counts.
+    pub kind: SiteKind,
     pub title: String,
     pub description: String,
     /// Other domains that redirect to the canonical domain.
@@ -63,6 +66,10 @@ pub struct Site {
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(deny_unknown_fields)]
 pub struct SiteInput {
+    /// The kind of an existing site cannot change.
+    /// An external site uses only `title`, and it has no aliases and no home page.
+    #[serde(default)]
+    pub kind: SiteKind,
     /// Trimmed, not blank, at most 200 characters.
     #[serde(deserialize_with = "text::de_required::<_, TITLE_MAX>")]
     pub title: String,
@@ -107,6 +114,7 @@ impl From<Site> for SiteInput {
     /// Returns the input that stores the same site again, with the same IndexNow key.
     fn from(site: Site) -> Self {
         Self {
+            kind: site.kind,
             title: site.title,
             description: site.description,
             aliases: site.aliases,

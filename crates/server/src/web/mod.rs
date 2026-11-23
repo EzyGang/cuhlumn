@@ -19,7 +19,7 @@ use axum::{
 use cuhlumn_api::{
     post::Post,
     settings::Scheme,
-    site::{Site, host::Host},
+    site::{Site, host::Host, kind::SiteKind},
 };
 use rusqlite::Connection;
 
@@ -43,7 +43,8 @@ use crate::{
 /// Answers a GET or HEAD request to a blog host or to an unknown host, and the analytics beacon `POST /_hit`.
 ///
 /// Successful pages come from the page cache, or are built once and stored there.
-/// An image or font request loads only the site, not its posts.
+/// An image, font, or analytics script request loads only the site, not its posts.
+/// An external site has no public pages, so its host answers as an unknown host.
 pub async fn public(state: AppState, request: Request) -> Response {
     if request.method() == Method::POST && request.uri().path() == hit::HIT_PATH {
         return hit::receive(&state, request).await;
@@ -70,7 +71,7 @@ pub async fn public(state: AppState, request: Request) -> Response {
     let generation = state.cache().generation(&host);
     let settings = state.settings();
     let scheme = settings.scheme();
-    let with_posts = !matches!(route, Route::Media(_) | Route::Font(_));
+    let with_posts = !matches!(route, Route::Media(_) | Route::Font(_) | Route::Script);
     let name = host.clone();
     let load = move |db: &mut Connection| lookup(db, scheme, &name, with_posts);
     let (site, posts) = match state.db().call(load).await {
@@ -119,7 +120,7 @@ pub fn plain(status: StatusCode, text: String) -> Response {
     (status, [(header::CONTENT_TYPE, content_type)], text).into_response()
 }
 
-/// Loads the site that `host` names, as its canonical host or an alias, in one database call.
+/// Loads the blog that `host` names, as its canonical host or an alias, in one database call.
 ///
 /// The published posts come only when `with_posts` is set and `host` is the canonical host.
 /// Otherwise the list is empty.
@@ -129,7 +130,7 @@ fn lookup(
     host: &Host,
     with_posts: bool,
 ) -> Result<Option<(Site, Vec<Post>)>, DbError> {
-    let Some(site) = sites::resolve(db, host)? else {
+    let Some(site) = sites::resolve(db, host)?.filter(|site| site.kind == SiteKind::Blog) else {
         return Ok(None);
     };
     let posts = match with_posts && site.host == *host {

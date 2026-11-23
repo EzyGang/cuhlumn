@@ -1,4 +1,5 @@
 import type { JSX } from "preact";
+import { Badge } from "../../shared/ui/Badge.view";
 import { LoadGate } from "../../shared/ui/LoadGate.view";
 import { PageHeader } from "../../shared/ui/PageHeader.view";
 import { Select } from "../../shared/ui/Select.view";
@@ -27,9 +28,7 @@ const Totals = ({ data }: ReportProps): JSX.Element => (
 
 const Report = ({ data }: ReportProps): JSX.Element =>
   data.empty ? (
-    <p class="panel text-sm text-secondary">
-      No views yet. Views appear here when readers open the blog.
-    </p>
+    <p class="panel text-sm text-secondary">{data.emptyText}</p>
   ) : (
     <>
       <Totals data={data} />
@@ -45,7 +44,12 @@ const Report = ({ data }: ReportProps): JSX.Element =>
 export const AnalyticsView = ({ data, status, actions }: AnalyticsModel): JSX.Element => (
   <section class="flex flex-col gap-6">
     <PageHeader
-      eyebrow="Analytics"
+      eyebrow={
+        <>
+          Analytics
+          {data.external ? <Badge>External site</Badge> : null}
+        </>
+      }
       title="Views and visitors"
       below={<p class="text-sm text-secondary">{data.rangeText}</p>}
     >

@@ -2,77 +2,20 @@ import { useSignal } from "@preact/signals";
 import { useParams } from "wouter-preact";
 import { useLoad } from "../../../hooks/useLoad.hook";
 import { getAnalytics } from "../../../services/analytics.service";
-import type { AnalyticsModel, RankListData, RankRow } from "../../../types/analytics";
+import { sitesStore } from "../../../stores/sites.store";
+import type { AnalyticsModel } from "../../../types/analytics";
 import type { Period } from "../../../types/api/Period";
 import type { SiteAnalytics } from "../../../types/api/SiteAnalytics";
-import {
-  BROWSER_LABELS,
-  DEVICE_LABELS,
-  PERIOD_ITEMS,
-  referrerLabel,
-} from "../../../utils/analyticsLabels";
+import { PERIOD_ITEMS } from "../../../utils/analyticsLabels";
 import { longDay } from "../../../utils/chart";
 import { dailyChart } from "../../../utils/dailyChart";
 import { formatCount } from "../../../utils/format";
+import { rankLists } from "../../../utils/rankLists";
+import { siteKind } from "../../../utils/sites";
 
-interface RankSource {
-  key: string;
-  label: string;
-  secondary?: string | null;
-  views: number;
-}
-
-const rankRows = (sources: readonly RankSource[], total: number): RankRow[] =>
-  sources.map((source) => ({
-    key: source.key,
-    label: source.label,
-    secondary: source.secondary ?? null,
-    count: formatCount(source.views),
-    share: total > 0 ? Math.min(100, (source.views / total) * 100) : 0,
-  }));
-
-const pageSources = (report: SiteAnalytics): RankSource[] =>
-  report.pages.map((page) => ({
-    key: page.path,
-    label: page.title ?? page.path,
-    secondary: page.title === null ? null : page.path,
-    views: page.views,
-  }));
-
-const referrerSources = (report: SiteAnalytics): RankSource[] =>
-  report.referrers.map((item) => ({
-    key: item.host ?? "",
-    label: referrerLabel(item.host),
-    views: item.views,
-  }));
-
-const deviceSources = (report: SiteAnalytics): RankSource[] =>
-  report.devices.map((item) => ({
-    key: item.device,
-    label: DEVICE_LABELS[item.device],
-    views: item.views,
-  }));
-
-const browserSources = (report: SiteAnalytics): RankSource[] =>
-  report.browsers.map((item) => ({
-    key: item.browser,
-    label: BROWSER_LABELS[item.browser],
-    views: item.views,
-  }));
-
-const rankLists = (report: SiteAnalytics): RankListData[] => {
-  const titled: [string, RankSource[]][] = [
-    ["Top pages", pageSources(report)],
-    ["Top referrers", referrerSources(report)],
-    ["Devices", deviceSources(report)],
-    ["Browsers", browserSources(report)],
-  ];
-  return titled.map(([title, sources]) => ({
-    title,
-    emptyText: "No data in this period.",
-    rows: rankRows(sources, report.views),
-  }));
-};
+const BLOG_EMPTY = "No views yet. Views appear here when readers open the blog.";
+const EXTERNAL_EMPTY =
+  "No views yet. Views appear here when readers open a page that loads the analytics script.";
 
 /** Loads the analytics of the current site for the selected period. */
 export const useAnalytics = (): AnalyticsModel => {
@@ -82,6 +25,7 @@ export const useAnalytics = (): AnalyticsModel => {
     getAnalytics(host, period.value),
   );
   const report = loaded.value;
+  const external = siteKind(sitesStore.sites.value, host) === "external";
   return {
     data: {
       period: period.value,
@@ -90,6 +34,8 @@ export const useAnalytics = (): AnalyticsModel => {
       views: formatCount(report?.views ?? 0),
       visitors: formatCount(report?.visitors ?? 0),
       empty: (report?.views ?? 0) === 0,
+      emptyText: external ? EXTERNAL_EMPTY : BLOG_EMPTY,
+      external,
       chart: dailyChart(report?.days ?? []),
       lists: report === null ? [] : rankLists(report),
     },

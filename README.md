@@ -86,7 +86,7 @@ Put Cloudflare or any TLS proxy in front of it.
 | IndexNow | Notifies Bing, Yandex, and other engines when a post is published, per blog |
 | Appearance | Five palettes, three widths, three home layouts, social icons, and code highlighting |
 | Announcement bar | Shows a scheduled message above every page of a blog |
-| Analytics | Counts views and daily visitors per blog without cookies, and shows them in the console |
+| Analytics | Counts views, daily visitors, and link clicks without cookies, for blogs and for external sites that load one script |
 | Management console | Edits sites, posts, appearance, images, fonts, and server settings in the browser |
 | Agent skill | Installs into Claude Code, Codex, Cursor, and other agents |
 
@@ -302,6 +302,7 @@ IndexNow is a setting of each site, and fonts for share images are uploaded in t
 | `cuhlumn media upload <image>` | Upload an image and print its `/media/` path |
 | `cuhlumn announce set "<text>"` | Show an announcement bar on every page |
 | `cuhlumn announce clear` | Remove the announcement bar |
+| `cuhlumn analytics [--period P]` | Print the views, visitors, and link clicks of the site |
 | `cuhlumn font import <url>` | Import a Google font into the server library |
 | `cuhlumn install-skill` | Install the agent skill |
 

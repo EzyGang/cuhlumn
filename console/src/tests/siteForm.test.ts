@@ -12,6 +12,7 @@ const STARTS_AT = Math.floor(new Date(2026, 10, 9, 9, 30).getTime() / 1000);
 
 const harbor = (): Site => ({
   host: "harbor.example.com",
+  kind: "blog",
   title: "Harbor Notes",
   description: "Notes from the Harbor team.",
   aliases: ["www.harbor.example.com"],
@@ -101,6 +102,7 @@ describe("site form mapping", () => {
 
   it("starts a new site with the defaults of the server", () => {
     const input = formToSiteInput(emptySiteForm());
+    expect(input.kind).toBe("blog");
     expect(input.indexnow).toBe(true);
     expect(input.show_cta).toBe(true);
     expect(input.announcement).toBeNull();

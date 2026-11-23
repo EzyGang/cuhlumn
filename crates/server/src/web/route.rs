@@ -44,6 +44,8 @@ pub enum Route {
     Media(MediaName),
     /// `/_fonts/{name}`: a library font file. Slugs have no `_`, so no post has this path.
     Font(FontName),
+    /// `/_hit.js`: the analytics script that external sites load.
+    Script,
     /// `/{key}.txt`: the IndexNow key file when `key` is the key of the site.
     KeyFile(IndexNowKey),
     /// Any other path.
@@ -98,6 +100,7 @@ impl Route {
             "/favicon.svg" => return Self::Favicon,
             "/favicon.ico" => return Self::FaviconIco,
             "/og.png" => return Self::SiteCard,
+            "/_hit.js" => return Self::Script,
             _ => (),
         }
         let Some(rest) = path.strip_prefix('/') else {

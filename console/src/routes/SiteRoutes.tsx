@@ -9,31 +9,36 @@ import { PostsPage } from "../pages/Posts.page";
 import { ServerSettingsPage } from "../pages/ServerSettings.page";
 import { SiteSettingsPage } from "../pages/SiteSettings.page";
 import { SitesPage } from "../pages/Sites.page";
+import { ExternalSiteGuard } from "./ExternalSiteGuard";
 
 export const SiteRoutes = (): JSX.Element => (
   <AppShellContainer>
-    <Switch>
-      <Route path="/" component={SitesPage} />
-      <Route path="/settings" component={ServerSettingsPage} />
-      <Route path="/fonts" component={FontsPage} />
-      <Route path="/new-site">
-        <SiteSettingsPage key="create-site" />
-      </Route>
-      <Route path="/sites/:host">
-        {(params) => <SiteSettingsPage key={`site:${params.host}`} />}
-      </Route>
-      <Route path="/sites/:host/posts">{(params) => <PostsPage key={params.host} />}</Route>
-      <Route path="/sites/:host/new-post">
-        {(params) => <PostEditorPage key={`create:${params.host}`} />}
-      </Route>
-      <Route path="/sites/:host/posts/:slug">
-        {(params) => <PostEditorPage key={`edit:${params.host}/${params.slug}`} />}
-      </Route>
-      <Route path="/sites/:host/media">{(params) => <MediaPage key={params.host} />}</Route>
-      <Route path="/sites/:host/analytics">{(params) => <AnalyticsPage key={params.host} />}</Route>
-      <Route>
-        <Redirect to="/" replace />
-      </Route>
-    </Switch>
+    <ExternalSiteGuard>
+      <Switch>
+        <Route path="/" component={SitesPage} />
+        <Route path="/settings" component={ServerSettingsPage} />
+        <Route path="/fonts" component={FontsPage} />
+        <Route path="/new-site">
+          <SiteSettingsPage key="create-site" />
+        </Route>
+        <Route path="/sites/:host">
+          {(params) => <SiteSettingsPage key={`site:${params.host}`} />}
+        </Route>
+        <Route path="/sites/:host/posts">{(params) => <PostsPage key={params.host} />}</Route>
+        <Route path="/sites/:host/new-post">
+          {(params) => <PostEditorPage key={`create:${params.host}`} />}
+        </Route>
+        <Route path="/sites/:host/posts/:slug">
+          {(params) => <PostEditorPage key={`edit:${params.host}/${params.slug}`} />}
+        </Route>
+        <Route path="/sites/:host/media">{(params) => <MediaPage key={params.host} />}</Route>
+        <Route path="/sites/:host/analytics">
+          {(params) => <AnalyticsPage key={params.host} />}
+        </Route>
+        <Route>
+          <Redirect to="/" replace />
+        </Route>
+      </Switch>
+    </ExternalSiteGuard>
   </AppShellContainer>
 );

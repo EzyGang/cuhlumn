@@ -15,7 +15,7 @@ use axum::{body::Body, http::StatusCode};
 use chrono::DateTime;
 use cuhlumn_api::{
     analytics::{Browser, Device},
-    site::host::Host,
+    site::{host::Host, kind::SiteKind},
 };
 use cuhlumn_server::{
     analytics::{View, agent::Client},
@@ -215,6 +215,7 @@ async fn visitors_are_unique_per_day() {
     let yesterday = now - DAY;
     let view = View {
         host: Host::new(HOST).unwrap(),
+        site: SiteKind::Blog,
         path: "/".to_owned(),
         referrer: None,
         client: Client {

@@ -79,6 +79,7 @@ After that, a post can have at most 20 tags.
 | `Tone` | `info`, `accent`, `warning` | `info` |
 | `Scheme` | `http`, `https` | `https` |
 | `FontSource` | `upload`, `google` | None, set by the server |
+| `SiteKind` | `blog`, `external` | `blog` |
 
 Values are lowercase.
 Another value returns `400` with a message that lists the valid values.

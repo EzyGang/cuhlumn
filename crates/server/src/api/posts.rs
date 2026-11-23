@@ -13,7 +13,7 @@ use crate::{
         error::ApiError,
         json::Json,
         path::{PostPath, SitePath},
-        sites::existing,
+        sites::blog,
     },
     db::{
         posts::{self, Visibility},
@@ -36,7 +36,7 @@ pub async fn list(
     let posts = state
         .db()
         .call(move |db| {
-            existing(db, &host)?;
+            blog(db, &host)?;
             Ok::<_, ApiError>(posts::list(db, scheme, &host, Visibility::All)?)
         })
         .await?;
@@ -57,7 +57,7 @@ pub async fn get(
     let post = state
         .db()
         .call(move |db| {
-            existing(db, &host)?;
+            blog(db, &host)?;
             posts::get(db, scheme, &host, &slug)?.ok_or_else(|| not_found(&host, &slug))
         })
         .await?;
@@ -79,7 +79,7 @@ pub async fn put(
     let (site, post) = state
         .db()
         .call(move |db| {
-            let site = existing(db, &host)?;
+            let site = blog(db, &host)?;
             if site.home.as_ref() == Some(&slug) && input.kind != Kind::Page {
                 return Err(ApiError::Conflict(format!(
                     "{slug} is the home page of {host}, so it must stay a page"
@@ -117,7 +117,7 @@ pub async fn delete(
     state
         .db()
         .call(move |db| {
-            let site = existing(db, &target)?;
+            let site = blog(db, &target)?;
             if site.home.as_ref() == Some(&slug) {
                 return Err(ApiError::Conflict(format!(
                     "{slug} is the home page of {target}; choose another home page first"

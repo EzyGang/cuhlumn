@@ -67,8 +67,8 @@ Both answers use the [error format](errors.md).
 
 Outside `/api`, every blog host, console host, and the admin listener serve `GET /_fonts/{name}` without authentication.
 See [Public font route](fonts.md#public-font-route).
-Every blog host also accepts `POST /_hit` without authentication.
-See [Public beacon route](analytics.md#public-beacon-route).
+The main domain of every blog also accepts `POST /_hit` and serves `GET /_hit.js` without authentication.
+See [Public beacon route](analytics.md#public-beacon-route) and [Public script route](analytics.md#public-script-route).
 
 ## Status codes
 

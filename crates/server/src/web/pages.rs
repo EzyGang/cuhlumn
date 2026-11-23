@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use crate::{
+    analytics::SCRIPT,
     db::unix_now,
     og::{self, CardText, OgError},
     render::{
@@ -46,6 +47,7 @@ const XML: &str = "application/xml; charset=utf-8";
 const ATOM: &str = "application/atom+xml; charset=utf-8";
 const SVG: &str = "image/svg+xml";
 const PNG: &str = "image/png";
+const JAVASCRIPT: &str = "text/javascript; charset=utf-8";
 const PAGE_MAX_AGE: u32 = 60;
 const FILE_MAX_AGE: u32 = 300;
 const IMAGE_MAX_AGE: u32 = 86_400;
@@ -122,6 +124,7 @@ fn render(blog: &Blog, route: Route, query: Option<&str>) -> Outcome {
             Outcome::Page(Cached::new(SVG, favicon::render(&blog.site), IMAGE_MAX_AGE))
         }
         Route::FaviconIco => Outcome::Redirect("/favicon.svg".to_owned()),
+        Route::Script => Outcome::Page(Cached::new(JAVASCRIPT, SCRIPT, IMAGE_MAX_AGE)),
         Route::KeyFile(key) if key == blog.site.indexnow_key => file(TEXT, key.into()),
         Route::BareTag(_)
         | Route::KeyFile(_)

@@ -66,6 +66,9 @@ export interface AnalyticsModel {
     views: string;
     visitors: string;
     empty: boolean;
+    emptyText: string;
+    /** True for a website that another server serves. */
+    external: boolean;
     chart: DailyChartData;
     lists: RankListData[];
   };

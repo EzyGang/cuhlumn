@@ -5,8 +5,8 @@ use std::collections::HashMap;
 use chrono::DateTime;
 use cuhlumn_api::{
     analytics::{
-        Browser, BrowserCount, DayCount, Device, DeviceCount, PageCount, Period, ReferrerCount,
-        SiteAnalytics,
+        Browser, BrowserCount, ClickCount, ClickKind, DayCount, Device, DeviceCount, PageCount,
+        Period, ReferrerCount, SiteAnalytics,
     },
     site::host::Host,
 };
@@ -14,12 +14,12 @@ use rusqlite::{Connection, Row, params};
 
 use crate::db::{DbError, parse};
 
-/// The most pages and referrers that a report lists.
+/// The most pages, referrers, and link targets that a report lists.
 const TOP: i64 = 10;
 
 /// Returns the report of `host` for `period`, which ends on the day `today`.
 ///
-/// `site_title` is the title of the home page `/`.
+/// `home_title` is the title of the home page `/`. An external site has no page titles, so it has `None`.
 ///
 /// # Errors
 ///
@@ -27,7 +27,7 @@ const TOP: i64 = 10;
 pub fn report(
     connection: &Connection,
     host: &Host,
-    site_title: &str,
+    home_title: Option<&str>,
     period: Period,
     today: i64,
 ) -> Result<SiteAnalytics, DbError> {
@@ -45,7 +45,7 @@ pub fn report(
         views: days.iter().map(|day| day.views).sum(),
         visitors: days.iter().map(|day| day.visitors).sum(),
         days,
-        pages: pages(connection, &range, site_title)?,
+        pages: pages(connection, &range, home_title)?,
         referrers: referrers(connection, &range)?,
         devices: grouped(connection, &range, "device", |device: Device, views| {
             DeviceCount { device, views }
@@ -53,6 +53,8 @@ pub fn report(
         browsers: grouped(connection, &range, "browser", |browser: Browser, views| {
             BrowserCount { browser, views }
         })?,
+        outbound: clicks(connection, &range, ClickKind::Outbound)?,
+        downloads: clicks(connection, &range, ClickKind::Download)?,
     })
 }
 
@@ -87,11 +89,11 @@ fn days(connection: &Connection, range: &Range<'_>) -> Result<Vec<DayCount>, DbE
     Ok(days)
 }
 
-/// Returns the most viewed pages with the title of the post, or the site title for `/`.
+/// Returns the most viewed pages with the title of the post, or `home_title` for `/`.
 fn pages(
     connection: &Connection,
     range: &Range<'_>,
-    site_title: &str,
+    home_title: Option<&str>,
 ) -> Result<Vec<PageCount>, DbError> {
     let pages = connection
         .prepare_cached(
@@ -103,7 +105,7 @@ fn pages(
         .query_map(params![range.host, range.from, range.to, TOP], |row| {
             let path: String = row.get(0)?;
             let title = match path.as_str() {
-                "/" => Some(site_title.to_owned()),
+                "/" => home_title.map(str::to_owned),
                 _ => row.get(2)?,
             };
             Ok(PageCount {
@@ -133,6 +135,31 @@ fn referrers(connection: &Connection, range: &Range<'_>) -> Result<Vec<ReferrerC
         })?
         .collect::<Result<_, _>>()?;
     Ok(referrers)
+}
+
+/// Returns the link targets of `kind` with the most clicks.
+fn clicks(
+    connection: &Connection,
+    range: &Range<'_>,
+    kind: ClickKind,
+) -> Result<Vec<ClickCount>, DbError> {
+    let clicks = connection
+        .prepare_cached(
+            "SELECT target, SUM(clicks) AS clicks FROM analytics_clicks
+             WHERE host = ?1 AND day BETWEEN ?2 AND ?3 AND kind = ?4
+             GROUP BY target ORDER BY clicks DESC, target LIMIT ?5",
+        )?
+        .query_map(
+            params![range.host, range.from, range.to, kind.as_str(), TOP],
+            |row| {
+                Ok(ClickCount {
+                    target: row.get(0)?,
+                    clicks: count(row, 1)?,
+                })
+            },
+        )?
+        .collect::<Result<_, _>>()?;
+    Ok(clicks)
 }
 
 /// Returns the views of each value of the client `column`, most views first.
