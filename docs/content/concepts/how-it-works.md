@@ -1,3 +1,7 @@
+---
+title: How Cuhlumn works
+---
+
 # How Cuhlumn works
 
 Cuhlumn is one Rust process with an HTTP router, a SQLite database, a media folder, and an in-memory page cache.

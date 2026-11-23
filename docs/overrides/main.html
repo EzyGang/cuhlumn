@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block htmltitle %}
+  {% if page.canonical_url == config.site_url %}
+    <title>Cuhlumn: self-hosted blogging platform for many domains</title>
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}
+
+{% block extrahead %}
+  {{ super() }}
+  {% set description = page.meta.description if page.meta and page.meta.description else config.site_description %}
+  {% set publisher = {
+    "@type": "Organization",
+    "@id": "https://github.com/EzyGang#organization",
+    "name": "EzyGang",
+    "url": "https://github.com/EzyGang",
+    "sameAs": ["https://github.com/EzyGang"]
+  } %}
+  {% if page.canonical_url == config.site_url %}
+    {% set data = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": config.site_url ~ "#website",
+          "name": config.site_name,
+          "url": config.site_url,
+          "description": config.site_description,
+          "publisher": {"@id": "https://github.com/EzyGang#organization"}
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": config.site_url ~ "#software",
+          "name": "Cuhlumn",
+          "description": "A self-hosted blogging platform that serves many blogs, each on its own domain, from one server.",
+          "url": config.site_url,
+          "applicationCategory": "DeveloperApplication",
+          "operatingSystem": "Linux, macOS, Windows",
+          "license": "https://github.com/EzyGang/cuhlumn/blob/main/LICENSE",
+          "downloadUrl": "https://github.com/EzyGang/cuhlumn/releases/latest",
+          "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+          "author": {"@id": "https://github.com/EzyGang#organization"},
+          "sameAs": [
+            "https://github.com/EzyGang/cuhlumn"
+          ]
+        },
+        publisher
+      ]
+    } %}
+  {% else %}
+    {% set data = {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "TechArticle",
+          "headline": page.title,
+          "description": description,
+          "url": page.canonical_url,
+          "inLanguage": "en",
+          "isPartOf": {"@type": "WebSite", "@id": config.site_url ~ "#website", "name": config.site_name, "url": config.site_url},
+          "about": {"@type": "SoftwareApplication", "@id": config.site_url ~ "#software", "name": "Cuhlumn"},
+          "publisher": {"@id": "https://github.com/EzyGang#organization"}
+        },
+        publisher
+      ]
+    } %}
+  {% endif %}
+  <script type="application/ld+json">{{ data | tojson }}</script>
+{% endblock %}

@@ -1,3 +1,7 @@
+---
+description: HTTP API routes that list, read, create, replace and delete the sites of a Cuhlumn server, with the SiteInput, Brand and Site fields.
+---
+
 # Sites
 
 ## Routes
